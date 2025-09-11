@@ -1149,22 +1149,22 @@ or fallback to the default.</p>
 <li>An instance of subclasses of <code>httpx.Auth</code>.</li>
 </ul>
 <p>The most involved of these is the last, which allows you to create authentication flows involving one or more requests. A subclass of <code>httpx.Auth</code> should implement <code>def auth_flow(request)</code>, and yield any requests that need to be made...</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">token</span>
 
-    <span class="k">def</span> <span class="nf">auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="c1"># Send the request, with a custom `X-Authentication` header.</span>
         <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;X-Authentication&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">token</span>
         <span class="k">yield</span> <span class="n">request</span>
 </code></pre></div>
 
 <p>If the auth flow requires more than one request, you can issue multiple yields, and obtain the response in each case...</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">token</span>
 
-    <span class="k">def</span> <span class="nf">auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
       <span class="n">response</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">request</span>
       <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">401</span><span class="p">:</span>
           <span class="c1"># If the server issues a 401 response then resend the request,</span>
@@ -1175,13 +1175,13 @@ or fallback to the default.</p>
 
 <p>Custom authentication classes are designed to not perform any I/O, so that they may be used with both sync and async client instances. If you are implementing an authentication scheme that requires the request body, then you need to indicate this on the class using a <code>requires_request_body</code> property.</p>
 <p>You will then be able to access <code>request.content</code> inside the <code>.auth_flow()</code> method.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
     <span class="n">requires_request_body</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">token</span>
 
-    <span class="k">def</span> <span class="nf">auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
       <span class="n">response</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">request</span>
       <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">401</span><span class="p">:</span>
           <span class="c1"># If the server issues a 401 response then resend the request,</span>
@@ -1189,22 +1189,22 @@ or fallback to the default.</p>
           <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;X-Authentication&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sign_request</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
           <span class="k">yield</span> <span class="n">request</span>
 
-    <span class="k">def</span> <span class="nf">sign_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sign_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="c1"># Create a request signature, based on `request.method`, `request.url`,</span>
         <span class="c1"># `request.headers`, and `request.content`.</span>
         <span class="o">...</span>
 </code></pre></div>
 
 <p>Similarly, if you are implementing a scheme that requires access to the response body, then use the <code>requires_response_body</code> property.   You will then be able to access response body properties and methods such as <code>response.content</code>, <code>response.text</code>, <code>response.json()</code>, etc.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
     <span class="n">requires_response_body</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">access_token</span><span class="p">,</span> <span class="n">refresh_token</span><span class="p">,</span> <span class="n">refresh_url</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">access_token</span><span class="p">,</span> <span class="n">refresh_token</span><span class="p">,</span> <span class="n">refresh_url</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">access_token</span> <span class="o">=</span> <span class="n">access_token</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">refresh_token</span> <span class="o">=</span> <span class="n">refresh_token</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">refresh_url</span> <span class="o">=</span> <span class="n">refresh_url</span>
 
-    <span class="k">def</span> <span class="nf">auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Authentication&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">access_token</span>
         <span class="n">response</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">request</span>
 
@@ -1217,11 +1217,11 @@ or fallback to the default.</p>
             <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Authentication&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">access_token</span>
             <span class="k">yield</span> <span class="n">request</span>
 
-    <span class="k">def</span> <span class="nf">build_refresh_request</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_refresh_request</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Return an `httpx.Request` for refreshing tokens.</span>
         <span class="o">...</span>
 
-    <span class="k">def</span> <span class="nf">update_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
         <span class="c1"># Update the `.access_token` and `.refresh_token` tokens</span>
         <span class="c1"># based on a refresh response.</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
@@ -1229,47 +1229,47 @@ or fallback to the default.</p>
 </code></pre></div>
 
 <p>If you <em>do</em> need to perform I/O other than HTTP requests, such as accessing a disk-based cache, or you need to use concurrency primitives, such as locks, then you should override <code>.sync_auth_flow()</code> and <code>.async_auth_flow()</code> (instead of <code>.auth_flow()</code>). The former will be used by <code>httpx.Client</code>, while the latter will be used by <code>httpx.AsyncClient</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
-<span class="kn">import</span> <span class="nn">threading</span>
-<span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 
 
-<span class="k">class</span> <span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sync_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_async_lock</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">sync_get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sync_get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sync_lock</span><span class="p">:</span>
             <span class="o">...</span>
 
-    <span class="k">def</span> <span class="nf">sync_auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sync_auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sync_get_token</span><span class="p">()</span>
         <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;Authorization&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Token </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">yield</span> <span class="n">request</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">async_get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">async_get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_async_lock</span><span class="p">:</span>
             <span class="o">...</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">async_auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">async_auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="n">token</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">async_get_token</span><span class="p">()</span>
         <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;Authorization&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Token </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">yield</span> <span class="n">request</span>
 </code></pre></div>
 
 <p>If you only want to support one of the two methods, then you should still override it, but raise an explicit <code>RuntimeError</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
-<span class="kn">import</span> <span class="nn">sync_only_library</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sync_only_library</span>
 
 
-<span class="k">class</span> <span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">sync_auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCustomAuth</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">Auth</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sync_auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="n">token</span> <span class="o">=</span> <span class="n">sync_only_library</span><span class="o">.</span><span class="n">get_token</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
         <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;Authorization&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Token </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">yield</span> <span class="n">request</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">async_auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">async_auth_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Cannot use a sync authentication class with httpx.AsyncClient&quot;</span><span class="p">)</span>
 </code></pre></div>
 

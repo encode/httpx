@@ -1284,7 +1284,7 @@
 <span class="gp">... </span>    <span class="n">r</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;https://example.com&#39;</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;alice&#39;</span><span class="p">,</span> <span class="s1">&#39;ecila123&#39;</span><span class="p">))</span>
 <span class="gp">...</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">auth</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;Authorization&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">base64</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">auth</span><span class="p">)</span>
 <span class="go">b&#39;alice:ecila123&#39;</span>
 </code></pre></div>
@@ -1332,10 +1332,10 @@
 <p>If you need to monitor download progress of large responses, you can use response streaming and inspect the <code>response.num_bytes_downloaded</code> property.</p>
 <p>This interface is required for properly determining download progress, because the total number of bytes returned by <code>response.content</code> or <code>response.iter_content()</code> will not always correspond with the raw content length of the response if HTTP response compression is being used.</p>
 <p>For example, showing a progress bar using the <a href="https://github.com/tqdm/tqdm"><code>tqdm</code></a> library while a response is being downloaded could be done like this…</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">tempfile</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 
-<span class="kn">import</span> <span class="nn">httpx</span>
-<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
 <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">()</span> <span class="k">as</span> <span class="n">download_file</span><span class="p">:</span>
     <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://speed.hetzner.de/100MB.bin&quot;</span>
@@ -1352,9 +1352,9 @@
 
 <p><img alt="tqdm progress bar" src="../../img/tqdm-progress.gif" /></p>
 <p>Or an alternate example, this time using the <a href="https://github.com/willmcgugan/rich"><code>rich</code></a> library…</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">tempfile</span>
-<span class="kn">import</span> <span class="nn">httpx</span>
-<span class="kn">import</span> <span class="nn">rich.progress</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">rich.progress</span>
 
 <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">()</span> <span class="k">as</span> <span class="n">download_file</span><span class="p">:</span>
     <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://speed.hetzner.de/100MB.bin&quot;</span>
@@ -1377,14 +1377,14 @@
 <h2 id="monitoring-upload-progress">Monitoring upload progress</h2>
 <p>If you need to monitor upload progress of large responses, you can use request content generator streaming.</p>
 <p>For example, showing a progress bar using the <a href="https://github.com/tqdm/tqdm"><code>tqdm</code></a> library.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">io</span>
-<span class="kn">import</span> <span class="nn">random</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
 
-<span class="kn">import</span> <span class="nn">httpx</span>
-<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
 
-<span class="k">def</span> <span class="nf">gen</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">gen</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    this is a complete example with generated random bytes.</span>
 <span class="sd">    you can replace `io.BytesIO` with real file object.</span>
@@ -1405,8 +1405,9 @@
 <p>As mentioned in the <a href="../../quickstart/#sending-multipart-file-uploads">quickstart</a>
 multipart file encoding is available by passing a dictionary with the
 name of the payloads as keys and either tuple of elements or a file-like object or a string as values.</p>
-<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">files</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;upload-file&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;report.xls&#39;</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;report.xls&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">),</span> <span class="s1">&#39;application/vnd.ms-excel&#39;</span><span class="p">)}</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">r</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;https://httpbin.org/post&quot;</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;report.xls&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">report_file</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">files</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;upload-file&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;report.xls&#39;</span><span class="p">,</span> <span class="n">report_file</span><span class="p">,</span> <span class="s1">&#39;application/vnd.ms-excel&#39;</span><span class="p">)}</span>
+<span class="gp">... </span>    <span class="n">r</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;https://httpbin.org/post&quot;</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
 <span class="go">{</span>
 <span class="go">  ...</span>
@@ -1450,9 +1451,12 @@ MIME header field.</li>
 <p>You can also send multiple files in one go with a multiple file field form.
 To do that, pass a list of <code>(field, &lt;file&gt;)</code> items instead of a dictionary, allowing you to pass multiple items with the same <code>field</code>.
 For instance this request sends 2 files, <code>foo.png</code> and <code>bar.png</code> in one request on the <code>images</code> form field:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">files</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;images&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;foo.png&#39;</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;foo.png&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">),</span> <span class="s1">&#39;image/png&#39;</span><span class="p">)),</span>
-<span class="go">                      (&#39;images&#39;, (&#39;bar.png&#39;, open(&#39;bar.png&#39;, &#39;rb&#39;), &#39;image/png&#39;))]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">r</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;https://httpbin.org/post&quot;</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;foo.png&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">foo_file</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bar.png&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bar_file</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">files</span> <span class="o">=</span> <span class="p">[</span>
+<span class="gp">... </span>        <span class="p">(</span><span class="s1">&#39;images&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;foo.png&#39;</span><span class="p">,</span> <span class="n">foo_file</span><span class="p">,</span> <span class="s1">&#39;image/png&#39;</span><span class="p">)),</span>
+<span class="gp">... </span>        <span class="p">(</span><span class="s1">&#39;images&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;bar.png&#39;</span><span class="p">,</span> <span class="n">bar_file</span><span class="p">,</span> <span class="s1">&#39;image/png&#39;</span><span class="p">)),</span>
+<span class="gp">... </span>    <span class="p">]</span>
+<span class="gp">... </span>    <span class="n">r</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;https://httpbin.org/post&quot;</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span>
 </code></pre></div>
 
 

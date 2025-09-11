@@ -1064,7 +1064,7 @@
 <p>In cases where no charset information is included on the response, the default behaviour is to assume "utf-8" encoding, which is by far the most widely used text encoding on the internet.</p>
 <h2 id="using-the-default-encoding">Using the default encoding</h2>
 <p>To understand this better let's start by looking at the default behaviour for text decoding...</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 <span class="c1"># Instantiate a client with the default configuration.</span>
 <span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
 <span class="c1"># Using the client...</span>
@@ -1078,7 +1078,7 @@
 <p>This is normally absolutely fine. Most servers will respond with a properly formatted Content-Type header, including a charset encoding. And in most cases where no charset encoding is included, UTF-8 is very likely to be used, since it is so widely adopted.</p>
 <h2 id="using-an-explicit-encoding">Using an explicit encoding</h2>
 <p>In some cases we might be making requests to a site where no character set information is being set explicitly by the server, but we know what the encoding is. In this case it's best to set the default encoding explicitly on the client.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 <span class="c1"># Instantiate a client with a Japanese character set as the default encoding.</span>
 <span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">default_encoding</span><span class="o">=</span><span class="s2">&quot;shift-jis&quot;</span><span class="p">)</span>
 <span class="c1"># Using the client...</span>
@@ -1103,10 +1103,10 @@ $<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </sp
 </code></pre></div>
 
 <p>Once <code>chardet</code> is installed, we can configure a client to use character-set autodetection.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
-<span class="kn">import</span> <span class="nn">chardet</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">chardet</span>
 
-<span class="k">def</span> <span class="nf">autodetect</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">autodetect</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">chardet</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;encoding&quot;</span><span class="p">)</span>
 
 <span class="c1"># Using a client with character-set autodetection enabled.</span>

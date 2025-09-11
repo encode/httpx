@@ -903,6 +903,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#exceptions-and-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exceptions and Errors
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1372,6 +1381,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#exceptions-and-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exceptions and Errors
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1532,6 +1550,8 @@ For more detailed documentation, see <a href="../advanced/transports/#mounting-t
 <p><code>requests</code> allows event hooks to mutate <code>Request</code> and <code>Response</code> objects. See <a href="https://requests.readthedocs.io/en/master/user/advanced/#event-hooks">examples</a> given in the documentation for <code>requests</code>.</p>
 <p>In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response.</p>
 <p>If you are looking for more control, consider checking out <a href="../advanced/transports/#custom-transports">Custom Transports</a>.</p>
+<h2 id="exceptions-and-errors">Exceptions and Errors</h2>
+<p><code>requests</code> exception hierarchy is slightly different to the <code>httpx</code> exception hierarchy. <code>requests</code> exposes a top level <code>RequestException</code>, where as <code>httpx</code> exposes a top level <code>HTTPError</code>. see the exceptions exposes in requests <a href="https://requests.readthedocs.io/en/latest/_modules/requests/exceptions/">here</a>. See the <code>httpx</code> error hierarchy <a href="https://www.python-httpx.org/exceptions/">here</a>.</p>
 
 
 

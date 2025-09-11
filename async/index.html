@@ -1268,7 +1268,7 @@ async client for sending outgoing HTTP requests.</p>
 
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>Use <a href="https://ipython.readthedocs.io/en/stable/">IPython</a> or Python 3.8+ with <code>python -m asyncio</code> to try this code interactively, as they support executing <code>async</code>/<code>await</code> expressions in the console.</p>
+<p>Use <a href="https://ipython.readthedocs.io/en/stable/">IPython</a> or Python 3.9+ with <code>python -m asyncio</code> to try this code interactively, as they support executing <code>async</code>/<code>await</code> expressions in the console.</p>
 </div>
 <h2 id="api-differences">API Differences</h2>
 <p>If you're using an async client then there are a few bits of API that
@@ -1321,13 +1321,13 @@ use async methods.</p>
 </ul>
 <p>For situations when context block usage is not practical, it is possible to enter "manual mode" by sending a <a href="../advanced/clients/#request-instances"><code>Request</code> instance</a> using <code>client.send(..., stream=True)</code>.</p>
 <p>Example in the context of forwarding the response to a streaming web endpoint with <a href="https://www.starlette.io">Starlette</a>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
-<span class="kn">from</span> <span class="nn">starlette.background</span> <span class="kn">import</span> <span class="n">BackgroundTask</span>
-<span class="kn">from</span> <span class="nn">starlette.responses</span> <span class="kn">import</span> <span class="n">StreamingResponse</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackgroundTask</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamingResponse</span>
 
 <span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span>
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">home</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">home</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
     <span class="n">req</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">build_request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;https://www.example.com/&quot;</span><span class="p">)</span>
     <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">StreamingResponse</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">aiter_text</span><span class="p">(),</span> <span class="n">background</span><span class="o">=</span><span class="n">BackgroundTask</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">aclose</span><span class="p">))</span>
@@ -1339,7 +1339,7 @@ use async methods.</p>
 </div>
 <h3 id="streaming-requests">Streaming requests</h3>
 <p>When sending a streaming request body with an <code>AsyncClient</code> instance, you should use an async bytes generator instead of a bytes generator:</p>
-<div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">upload_bytes</span><span class="p">():</span>
+<div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">upload_bytes</span><span class="p">():</span>
     <span class="o">...</span>  <span class="c1"># yield byte content</span>
 
 <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">upload_bytes</span><span class="p">())</span>
@@ -1348,7 +1348,7 @@ use async methods.</p>
 <h3 id="explicit-transport-instances">Explicit transport instances</h3>
 <p>When instantiating a transport instance directly, you need to use <code>httpx.AsyncHTTPTransport</code>.</p>
 <p>For instance:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">transport</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncHTTPTransport</span><span class="p">(</span><span class="n">retries</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="n">transport</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
 <span class="gp">&gt;&gt;&gt; </span>    <span class="o">...</span>
@@ -1361,10 +1361,10 @@ for socket operations and concurrency primitives.</p>
 <h3 id="asyncio"><a href="https://docs.python.org/3/library/asyncio.html">AsyncIO</a></h3>
 <p>AsyncIO is Python's <a href="https://docs.python.org/3/library/asyncio.html">built-in library</a>
 for writing concurrent code with the async/await syntax.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
-<span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
         <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;https://www.example.com/&#39;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
@@ -1375,10 +1375,10 @@ for writing concurrent code with the async/await syntax.</p>
 <h3 id="trio"><a href="https://github.com/python-trio/trio">Trio</a></h3>
 <p>Trio is <a href="https://trio.readthedocs.io/en/stable/">an alternative async library</a>,
 designed around the <a href="https://en.wikipedia.org/wiki/Structured_concurrency">the principles of structured concurrency</a>.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
-<span class="kn">import</span> <span class="nn">trio</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">trio</span>
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
         <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;https://www.example.com/&#39;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
@@ -1392,10 +1392,10 @@ designed around the <a href="https://en.wikipedia.org/wiki/Structured_concurrenc
 </div>
 <h3 id="anyio"><a href="https://github.com/agronholm/anyio">AnyIO</a></h3>
 <p>AnyIO is an <a href="https://anyio.readthedocs.io/">asynchronous networking and concurrency library</a> that works on top of either <code>asyncio</code> or <code>trio</code>. It blends in with native libraries of your chosen backend (defaults to <code>asyncio</code>).</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
-<span class="kn">import</span> <span class="nn">anyio</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">anyio</span>
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
         <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;https://www.example.com/&#39;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>

@@ -873,6 +873,24 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#ssl_cert_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSL_CERT_FILE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ssl_cert_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSL_CERT_DIR
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1060,6 +1078,24 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#ssl_cert_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSL_CERT_FILE
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ssl_cert_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSL_CERT_DIR
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1114,6 +1150,22 @@ python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;i
 <span class="c1"># These requests will be sent directly, bypassing the proxy</span>
 python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import httpx; httpx.get(&#39;http://127.0.0.1:5000/my-api&#39;)&quot;</span>
 python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import httpx; httpx.get(&#39;https://www.python-httpx.org&#39;)&quot;</span>
+</code></pre></div>
+
+<h2 id="ssl_cert_file"><code>SSL_CERT_FILE</code></h2>
+<p>Valid values: a filename</p>
+<p>If this environment variable is set then HTTPX will load
+CA certificate from the specified file instead of the default
+location.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><span class="go">SSL_CERT_FILE=/path/to/ca-certs/ca-bundle.crt python -c &quot;import httpx; httpx.get(&#39;https://example.com&#39;)&quot;</span>
+</code></pre></div>
+
+<h2 id="ssl_cert_dir"><code>SSL_CERT_DIR</code></h2>
+<p>Valid values: a directory following an <a href="https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html">OpenSSL specific layout</a>.</p>
+<p>If this environment variable is set and the directory follows an <a href="https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html">OpenSSL specific layout</a> (ie. you ran <code>c_rehash</code>) then HTTPX will load CA certificates from this directory instead of the default location.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><span class="go">SSL_CERT_DIR=/path/to/ca-certs/ python -c &quot;import httpx; httpx.get(&#39;https://example.com&#39;)&quot;</span>
 </code></pre></div>
 
 

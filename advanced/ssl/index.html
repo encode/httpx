@@ -1111,9 +1111,9 @@
 <p>If you're using a <code>Client()</code> instance you should pass any <code>verify=&lt;...&gt;</code> configuration when instantiating the client.</p>
 <p>By default the <a href="https://certifiio.readthedocs.io/en/latest/">certifi CA bundle</a> is used for SSL verification.</p>
 <p>For more complex configurations you can pass an <a href="https://docs.python.org/3/library/ssl.html">SSL Context</a> instance...</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">certifi</span>
-<span class="kn">import</span> <span class="nn">httpx</span>
-<span class="kn">import</span> <span class="nn">ssl</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">certifi</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ssl</span>
 
 <span class="c1"># This SSL context is equivelent to the default `verify=True`.</span>
 <span class="n">ctx</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">create_default_context</span><span class="p">(</span><span class="n">cafile</span><span class="o">=</span><span class="n">certifi</span><span class="o">.</span><span class="n">where</span><span class="p">())</span>
@@ -1121,9 +1121,9 @@
 </code></pre></div>
 
 <p>Using <a href="https://truststore.readthedocs.io/">the <code>truststore</code> package</a> to support system certificate stores...</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">ssl</span>
-<span class="kn">import</span> <span class="nn">truststore</span>
-<span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">ssl</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">truststore</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 
 <span class="c1"># Use system certificate stores.</span>
 <span class="n">ctx</span> <span class="o">=</span> <span class="n">truststore</span><span class="o">.</span><span class="n">SSLContext</span><span class="p">(</span><span class="n">ssl</span><span class="o">.</span><span class="n">PROTOCOL_TLS_CLIENT</span><span class="p">)</span>
@@ -1131,8 +1131,8 @@
 </code></pre></div>
 
 <p>Loding an alternative certificate verification store using <a href="https://docs.python.org/3/library/ssl.html">the standard SSL context API</a>...</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
-<span class="kn">import</span> <span class="nn">ssl</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ssl</span>
 
 <span class="c1"># Use an explicitly configured certificate store.</span>
 <span class="n">ctx</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">create_default_context</span><span class="p">(</span><span class="n">cafile</span><span class="o">=</span><span class="s2">&quot;path/to/certs.pem&quot;</span><span class="p">)</span>  <span class="c1"># Either cafile or capath.</span>
@@ -1148,17 +1148,7 @@
 </code></pre></div>
 
 <h3 id="working-with-ssl_cert_file-and-ssl_cert_dir">Working with <code>SSL_CERT_FILE</code> and <code>SSL_CERT_DIR</code></h3>
-<p>Unlike <code>requests</code>, the <code>httpx</code> package does not automatically pull in <a href="https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_default_verify_paths.html">the environment variables <code>SSL_CERT_FILE</code> or <code>SSL_CERT_DIR</code></a>. If you want to use these they need to be enabled explicitly.</p>
-<p>For example...</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Use `SSL_CERT_FILE` or `SSL_CERT_DIR` if configured.</span>
-<span class="c1"># Otherwise default to certifi.</span>
-<span class="n">ctx</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">create_default_context</span><span class="p">(</span>
-    <span class="n">cafile</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;SSL_CERT_FILE&quot;</span><span class="p">,</span> <span class="n">certifi</span><span class="o">.</span><span class="n">where</span><span class="p">()),</span>
-    <span class="n">capath</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;SSL_CERT_DIR&quot;</span><span class="p">),</span>
-<span class="p">)</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">verify</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
-</code></pre></div>
-
+<p><code>httpx</code> does respect the <code>SSL_CERT_FILE</code> and <code>SSL_CERT_DIR</code> environment variables by default. For details, refer to <a href="../../environment_variables/#ssl_cert_file">the section on the environment variables page</a>.</p>
 <h3 id="making-https-requests-to-a-local-server">Making HTTPS requests to a local server</h3>
 <p>When making requests to local servers, such as a development server running on <code>localhost</code>, you will typically be using unencrypted HTTP connections.</p>
 <p>If you do need to make HTTPS connections to a local server, for example to test an HTTPS-only service, you will need to create and use your own certificates. Here's one way to do it...</p>

@@ -1390,20 +1390,20 @@ sending of the requests.</p>
 <p>For some advanced configuration you might need to instantiate a transport
 class directly, and pass it to the client instance. One example is the
 <code>local_address</code> configuration which is only available via this low-level API.</p>
-<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">transport</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPTransport</span><span class="p">(</span><span class="n">local_address</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="n">transport</span><span class="p">)</span>
 </code></pre></div>
 
 <p>Connection retries are also available via this interface. Requests will be retried the given number of times in case an <code>httpx.ConnectError</code> or an <code>httpx.ConnectTimeout</code> occurs, allowing smoother operation under flaky networks. If you need other forms of retry behaviors, such as handling read/write errors or reacting to <code>503 Service Unavailable</code>, consider general-purpose tools such as <a href="https://github.com/jd/tenacity">tenacity</a>.</p>
-<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">transport</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPTransport</span><span class="p">(</span><span class="n">retries</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="n">transport</span><span class="p">)</span>
 </code></pre></div>
 
 <p>Similarly, instantiating a transport directly provides a <code>uds</code> option for
 connecting via a Unix Domain Socket that is only available via this low-level API:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Connect to the Docker API via a Unix Socket.</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">transport</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPTransport</span><span class="p">(</span><span class="n">uds</span><span class="o">=</span><span class="s2">&quot;/var/run/docker.sock&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="n">transport</span><span class="p">)</span>
@@ -1421,14 +1421,14 @@ connecting via a Unix Domain Socket that is only available via this low-level AP
 </ul>
 <h3 id="example">Example</h3>
 <p>Here's an example of integrating against a Flask application:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span>
-<span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">flask</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flask</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">hello</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">hello</span><span class="p">():</span>
     <span class="k">return</span> <span class="s2">&quot;Hello World!&quot;</span>
 
 <span class="n">transport</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">WSGITransport</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">)</span>
@@ -1461,12 +1461,12 @@ connecting via a Unix Domain Socket that is only available via this low-level AP
 </ul>
 <h3 id="example_1">Example</h3>
 <p>Let's take this Starlette application as an example:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">starlette.applications</span> <span class="kn">import</span> <span class="n">Starlette</span>
-<span class="kn">from</span> <span class="nn">starlette.responses</span> <span class="kn">import</span> <span class="n">HTMLResponse</span>
-<span class="kn">from</span> <span class="nn">starlette.routing</span> <span class="kn">import</span> <span class="n">Route</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">starlette.applications</span><span class="w"> </span><span class="kn">import</span> <span class="n">Starlette</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTMLResponse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.routing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Route</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">HTMLResponse</span><span class="p">(</span><span class="s2">&quot;Hello World!&quot;</span><span class="p">)</span>
 
 
@@ -1512,24 +1512,24 @@ use with <code>AsyncClient</code>.</p>
 <p>See the <code>handle_request</code> and <code>handle_async_request</code> docstrings for more details
 on the specifics of the Transport API.</p>
 <p>A complete example of a custom transport implementation would be:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 
-<span class="k">class</span> <span class="nc">HelloWorldTransport</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">BaseTransport</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HelloWorldTransport</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">BaseTransport</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A mock transport that always returns a JSON &quot;Hello, world!&quot; response.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Response</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Hello, world!&quot;</span><span class="p">})</span>
 </code></pre></div>
 
 <p>Or this example, which uses a custom transport and <code>httpx.Mounts</code> to always redirect <code>http://</code> requests.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HTTPSRedirect</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">BaseTransport</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HTTPSRedirect</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">BaseTransport</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A transport that always redirects to HTTPS.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">copy_with</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;https&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Response</span><span class="p">(</span><span class="mi">303</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Location&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">url</span><span class="p">)})</span>
 
@@ -1542,17 +1542,17 @@ on the specifics of the Transport API.</p>
 </code></pre></div>
 
 <p>A useful pattern here is custom transport classes that wrap the default HTTP implementation. For example...</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DebuggingTransport</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">BaseTransport</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DebuggingTransport</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">BaseTransport</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_wrapper</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPTransport</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt;&gt;&gt; </span><span class="si">{</span><span class="n">request</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapper</span><span class="o">.</span><span class="n">handle_request</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&lt;&lt;&lt; </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">response</span>
 
-    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_wrapper</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
 <span class="n">transport</span> <span class="o">=</span> <span class="n">DebuggingTransport</span><span class="p">()</span>
@@ -1560,20 +1560,20 @@ on the specifics of the Transport API.</p>
 </code></pre></div>
 
 <p>Here's another case, where we're using a round-robin across a number of different proxies...</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ProxyRoundRobin</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">BaseTransport</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proxies</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ProxyRoundRobin</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">BaseTransport</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proxies</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transports</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">httpx</span><span class="o">.</span><span class="n">HTTPTransport</span><span class="p">(</span><span class="n">proxy</span><span class="o">=</span><span class="n">proxy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">proxy</span> <span class="ow">in</span> <span class="n">proxies</span>
         <span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
         <span class="n">transport</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transports</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transports</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">transport</span><span class="o">.</span><span class="n">handle_request</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">transport</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transports</span><span class="p">:</span>
             <span class="n">transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
@@ -1591,7 +1591,7 @@ on the specifics of the Transport API.</p>
 and return pre-determined responses, rather than making actual network requests.</p>
 <p>The <code>httpx.MockTransport</code> class accepts a handler function, which can be used
 to map requests onto pre-determined responses:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">handler</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">handler</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Response</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Hello, world!&quot;</span><span class="p">})</span>
 
 
@@ -1610,14 +1610,14 @@ mocking library, RESPX</a>, or the <a href="https://github.com/Colin-b/pytest_ht
 <p>You can also mount transports against given schemes or domains, to control
 which transport an outgoing request should be routed via, with <a href="#routing">the same style
 used for specifying proxy routing</a>.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 
-<span class="k">class</span> <span class="nc">HTTPSRedirectTransport</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">BaseTransport</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HTTPSRedirectTransport</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">BaseTransport</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A transport that always redirects to HTTPS.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">extensions</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">extensions</span><span class="p">):</span>
         <span class="n">scheme</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">url</span>
         <span class="k">if</span> <span class="n">port</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">location</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;https://</span><span class="si">%s%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
@@ -1646,7 +1646,7 @@ used for specifying proxy routing</a>.</p>
 <p>Mocking requests to a given domain:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># All requests to &quot;example.org&quot; should be mocked out.</span>
 <span class="c1"># Other requests occur as usual.</span>
-<span class="k">def</span> <span class="nf">handler</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">handler</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Response</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Hello, World!&quot;</span><span class="p">})</span>
 
 <span class="n">mounts</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;all://example.org&quot;</span><span class="p">:</span> <span class="n">httpx</span><span class="o">.</span><span class="n">MockTransport</span><span class="p">(</span><span class="n">handler</span><span class="p">)}</span>

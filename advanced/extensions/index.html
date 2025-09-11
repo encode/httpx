@@ -1242,9 +1242,9 @@
 <p>The trace extension allows a callback handler to be installed to monitor the internal
 flow of events within the underlying <code>httpcore</code> transport.</p>
 <p>The simplest way to explain this is with an example:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 
-<span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
 
 <span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>

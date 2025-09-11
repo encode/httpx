@@ -972,10 +972,10 @@ every time a particular type of event takes place.</p>
 <li><code>response</code> - Called after the response has been fetched from the network, but before it is returned to the caller. Passed the <code>response</code> instance.</li>
 </ul>
 <p>These allow you to install client-wide functionality such as logging, monitoring or tracing.</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">log_request</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_request</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Request event hook: </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s2"> - Waiting for response&quot;</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">log_response</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">log_response</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
     <span class="n">request</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">request</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Response event hook: </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s2"> - Status </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -985,7 +985,7 @@ every time a particular type of event takes place.</p>
 <p>You can also use these hooks to install response processing code, such as this
 example, which creates a client instance that always raises <code>httpx.HTTPStatusError</code>
 on 4xx and 5xx responses.</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">raise_on_4xx_5xx</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">raise_on_4xx_5xx</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
     <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
 
 <span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">event_hooks</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;response&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">raise_on_4xx_5xx</span><span class="p">]})</span>
@@ -999,7 +999,7 @@ should be read or not.</p>
 need to call <code>response.read()</code>, or for AsyncClients, <code>response.aread()</code>.</p>
 </div>
 <p>The hooks are also allowed to modify <code>request</code> and <code>response</code> objects.</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_timestamp</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_timestamp</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
     <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;x-request-timestamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tz</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
 
 <span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">event_hooks</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;request&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">add_timestamp</span><span class="p">]})</span>
