@@ -26,11 +26,15 @@ except ImportError:  # pragma: no cover
         brotli = None
 
 
-# Zstandard support is optional
+# Zstandard support is avaible in the standard library from 3.14 and later,
+# or by an optional dependency on `zstandard`
 try:
-    import zstandard
+    import compression.zstd as zstandard
 except ImportError:  # pragma: no cover
-    zstandard = None  # type: ignore
+    try:
+        import zstandard
+    except ImportError:  # pragma: no cover
+        zstandard = None
 
 
 class ContentDecoder:
@@ -174,8 +178,15 @@ class ZStandardDecoder(ContentDecoder):
                 "Make sure to install httpx using `pip install httpx[zstd]`."
             ) from None
 
-        self.decompressor = zstandard.ZstdDecompressor().decompressobj()
+        self._new_decompressor()
         self.seen_data = False
+
+    def _new_decompressor(self) -> None:
+        decompressor = zstandard.ZstdDecompressor()
+        if hasattr(decompressor, "decompressobj"):
+            self.decompressor = decompressor.decompressobj()  # prgama: no cover
+        else:
+            self.decompressor = decompressor  # pragma: no cover
 
     def decode(self, data: bytes) -> bytes:
         assert zstandard is not None
@@ -185,19 +196,16 @@ class ZStandardDecoder(ContentDecoder):
             output.write(self.decompressor.decompress(data))
             while self.decompressor.eof and self.decompressor.unused_data:
                 unused_data = self.decompressor.unused_data
-                self.decompressor = zstandard.ZstdDecompressor().decompressobj()
+                self._new_decompressor()
                 output.write(self.decompressor.decompress(unused_data))
         except zstandard.ZstdError as exc:
             raise DecodingError(str(exc)) from exc
         return output.getvalue()
 
     def flush(self) -> bytes:
-        if not self.seen_data:
-            return b""
-        ret = self.decompressor.flush()  # note: this is a no-op
-        if not self.decompressor.eof:
+        if self.seen_data and not self.decompressor.eof:
             raise DecodingError("Zstandard data is incomplete")  # pragma: no cover
-        return bytes(ret)
+        return b""
 
 
 class MultiDecoder(ContentDecoder):
