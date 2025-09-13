@@ -100,7 +100,7 @@ what gets sent over the wire.*
 * `def __init__(method, url, [params], [headers], [cookies], [content], [data], [files], [json], [stream])`
 * `.method` - **str**
 * `.url` - **URL**
-* `.content` - **byte**, **byte iterator**, or **byte async iterator**
+* `.content` - **byte**, **bytearray**, **byte iterator**, or **byte async iterator**
 * `.headers` - **Headers**
 * `.cookies` - **Cookies**
 

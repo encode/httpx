@@ -105,9 +105,9 @@ class UnattachedStream(AsyncByteStream, SyncByteStream):
 
 
 def encode_content(
-    content: str | bytes | Iterable[bytes] | AsyncIterable[bytes],
+    content: str | bytes | bytearray | Iterable[bytes] | AsyncIterable[bytes],
 ) -> tuple[dict[str, str], SyncByteStream | AsyncByteStream]:
-    if isinstance(content, (bytes, str)):
+    if isinstance(content, (bytes, bytearray, str)):
         body = content.encode("utf-8") if isinstance(content, str) else content
         content_length = len(body)
         headers = {"Content-Length": str(content_length)} if body else {}
