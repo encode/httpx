@@ -94,7 +94,6 @@ class SyncByteStream:
         raise NotImplementedError(
             "The '__iter__' method must be implemented."
         )  # pragma: no cover
-        yield b""  # pragma: no cover
 
     def close(self) -> None:
         """
@@ -104,11 +103,10 @@ class SyncByteStream:
 
 
 class AsyncByteStream:
-    async def __aiter__(self) -> AsyncIterator[bytes]:
+    def __aiter__(self) -> AsyncIterator[bytes]:
         raise NotImplementedError(
             "The '__aiter__' method must be implemented."
         )  # pragma: no cover
-        yield b""  # pragma: no cover
 
     async def aclose(self) -> None:
         pass

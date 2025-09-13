@@ -5,6 +5,7 @@ import mimetypes
 import os
 import re
 import typing
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 from ._types import (
@@ -295,6 +296,6 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         for chunk in self.iter_chunks():
             yield chunk
 
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+    async def __aiter__(self) -> AsyncGenerator[bytes]:
         for chunk in self.iter_chunks():
             yield chunk
