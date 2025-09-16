@@ -23,7 +23,7 @@ cryptography==45.0.7
 mypy==1.17.1
 pytest==8.4.1
 ruff==0.12.11
-trio==0.30.0
+trio==0.31.0
 trio-typing==0.10.0
 trustme==1.2.1
 uvicorn==0.35.0
