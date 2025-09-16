@@ -1,0 +1,29 @@
+#!venv/bin/python
+import unasync
+
+unasync.unasync_files(
+    fpath_list = [
+        "src/ahttpx/__init__.py",
+        "src/ahttpx/__version__.py",
+        "src/ahttpx/_client.py",
+        "src/ahttpx/_content.py",
+        "src/ahttpx/_headers.py",
+        "src/ahttpx/_parsers.py",
+        "src/ahttpx/_pool.py",
+        "src/ahttpx/_quickstart.py",
+        "src/ahttpx/_response.py",
+        "src/ahttpx/_request.py",
+        "src/ahttpx/_server.py",
+        "src/ahttpx/_streams.py",
+        "src/ahttpx/_urlencode.py",
+        "src/ahttpx/_urlparse.py",
+        "src/ahttpx/_urls.py",
+    ],
+    rules = [
+        unasync.Rule(
+            "src/ahttpx/",
+            "src/httpx/",
+            additional_replacements={"ahttpx": "httpx"}
+        ),
+    ]
+)

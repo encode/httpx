@@ -1,0 +1,28 @@
+---
+name: Test Suite
+
+on:
+  push:
+    branches: ["dev"]
+  pull_request:
+    branches: ["dev", "version-*"]
+
+jobs:
+  tests:
+    name: "Python ${{ matrix.python-version }}"
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - uses: "actions/checkout@v4"
+      - uses: "actions/setup-python@v5"
+        with:
+          python-version: "${{ matrix.python-version }}"
+          allow-prereleases: true
+      - name: "Install dependencies"
+        run: "scripts/install"
+      - name: "Run tests"
+        run: "scripts/test"

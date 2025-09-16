@@ -1,0 +1,15 @@
+#!/bin/sh
+
+PKG=$1
+
+if [ "$PKG" != "httpx" ] && [ "$PKG" != "ahttpx" ] ; then
+    echo "publish [httpx|ahttpx]"
+    exit 1
+fi
+
+export PREFIX=""
+if [ -d 'venv' ] ; then
+    export PREFIX="venv/bin/"
+fi
+${PREFIX}pip install -q twine
+${PREFIX}twine upload dist/$PKG-*

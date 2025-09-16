@@ -1,0 +1,153 @@
+#!venv/bin/python
+import pathlib
+import posixpath
+
+import click
+import ghp_import
+import logging
+import httpx
+import jinja2
+import markdown
+
+import xml.etree.ElementTree as etree
+
+
+pages = {
+    '/': 'docs/index.md',
+    '/quickstart': 'docs/quickstart.md',
+    '/clients': 'docs/clients.md',
+    '/servers': 'docs/servers.md',
+    '/requests': 'docs/requests.md',
+    '/responses': 'docs/responses.md',
+    '/urls': 'docs/urls.md',
+    '/headers': 'docs/headers.md',
+    '/content-types': 'docs/content-types.md',
+    '/streams': 'docs/streams.md',
+    '/connections': 'docs/connections.md',
+    '/parsers': 'docs/parsers.md',
+    '/networking': 'docs/networking.md',
+    '/about': 'docs/about.md',
+}
+
+def path_to_url(path):
+    if path == "index.md":
+        return "/"
+    return f"/{path[:-3]}"
+
+
+class URLsProcessor(markdown.treeprocessors.Treeprocessor):
+    def __init__(self, state):
+        self.state = state
+
+    def run(self, root: etree.Element) -> etree.Element:
+        for element in root.iter():
+            if element.tag == 'a':
+                key = 'href'
+            elif element.tag == 'img':
+                key = 'src'
+            else:
+                continue
+
+            url_or_path = element.get(key)
+            if url_or_path is not None:
+                output_url = self.rewrite_url(url_or_path)
+                element.set(key, output_url)
+
+        return root
+
+    def rewrite_url(self, href: str) -> str:
+        if not href.endswith('.md'):
+            return href
+
+        current_url = path_to_url(self.state.file)
+        linked_url = path_to_url(href)
+        return posixpath.relpath(linked_url, start=current_url)
+
+
+class BuildState:
+    def __init__(self):
+        self.file = ''
+
+
+state = BuildState()
+env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader('docs/templates'),
+    autoescape=False
+)
+template = env.get_template('base.html')
+md = markdown.Markdown(extensions=['fenced_code'])
+md.treeprocessors.register(
+    item=URLsProcessor(state),
+    name='urls',
+    priority=10,
+)
+
+
+def not_found():
+    text = httpx.Text('Not Found')
+    return httpx.Response(404, content=text)
+
+
+def web_server(request):
+    if request.url.path not in pages:
+        return not_found()
+
+    file = pages[request.url.path]
+    text = pathlib.Path(file).read_text()
+
+    state.file = file
+    content = md.convert(text)
+    html = template.render(content=content).encode('utf-8')
+    content = httpx.HTML(html)
+    return httpx.Response(200, content=html)
+
+
+@click.group()
+def main():
+    pass
+
+
+@main.command()
+def build():
+    pathlib.Path("build").mkdir(exist_ok=True)
+
+    for url, path in pages.items():
+        basename = url.lstrip("/")
+        output = f"build/{basename}.html" if basename else "build/index.html"
+        text = pathlib.Path(path).read_text()
+        content = md.convert(text)
+        html = template.render(content=content)
+        pathlib.Path(output).write_text(html)
+        print(f"Built {output}")
+
+
+@main.command()
+def serve():
+    logging.basicConfig(
+        format="%(levelname)s [%(asctime)s] %(name)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=logging.INFO
+    )
+
+    with httpx.serve_http(web_server) as server:
+        server.wait()
+
+
+@main.command()
+def deploy():
+    ghp_import.ghp_import(
+        "build",
+        mesg="Documentation deploy",
+        remote="origin",
+        branch="gh-pages",
+        push=True,
+        force=False,
+        use_shell=False,
+        no_history=False,
+        nojekyll=True,
+    )
+    print(f"Deployed to GitHub")
+
+
+if __name__ == "__main__":
+    main()

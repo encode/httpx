@@ -1,0 +1,17 @@
+-e .
+
+# Build...
+build==1.2.2
+
+# Test...
+mypy==1.15.0
+pytest==8.3.5
+pytest-cov==6.1.1
+
+# Sync & Async mirroring...
+unasync==0.6.0
+
+# Documentation...
+click==8.2.1
+jinja2==3.1.6
+markdown==3.8

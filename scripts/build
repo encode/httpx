@@ -1,0 +1,32 @@
+#!/bin/sh
+
+PKG=$1
+
+if [ "$PKG" != "httpx" ] && [ "$PKG" != "ahttpx" ] ; then
+    echo "build [httpx|ahttpx]"
+    exit 1
+fi
+
+export PREFIX=""
+if [ -d 'venv' ] ; then
+    export PREFIX="venv/bin/"
+fi
+
+# Create pyproject-httpx.toml and pyproject-ahttpx.toml
+cp pyproject.toml pyproject-httpx.toml
+cat pyproject-httpx.toml | sed 's/name = "httpx"/name = "ahttpx"/' > pyproject-ahttpx.toml
+
+# Build the releases
+if [ "$PKG" == "httpx" ]; then
+    ${PREFIX}python -m build
+fi
+if [ "$PKG" == "ahttpx" ]; then
+    cp pyproject-ahttpx.toml pyproject.toml
+    ${PREFIX}python -m build
+    cp pyproject-httpx.toml pyproject.toml
+fi
+
+# Clean up
+rm pyproject-httpx.toml pyproject-ahttpx.toml
+
+echo $PKG
