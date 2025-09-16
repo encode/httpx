@@ -1,5 +1,6 @@
 import ssl
 import typing
+from datetime import timedelta
 from pathlib import Path
 
 import certifi
@@ -105,8 +106,23 @@ def test_timeout_eq():
     assert timeout == httpx.Timeout(timeout=5.0)
 
 
+def test_timeout_timedelta_eq():
+    timeout = httpx.Timeout(timeout=timedelta(seconds=5.0))
+    assert timeout == httpx.Timeout(timeout=5.0)
+
+
 def test_timeout_all_parameters_set():
     timeout = httpx.Timeout(connect=5.0, read=5.0, write=5.0, pool=5.0)
+    assert timeout == httpx.Timeout(timeout=5.0)
+
+
+def test_timeout_all_parameters_timedelta_set():
+    timeout = httpx.Timeout(
+        connect=timedelta(seconds=5.0),
+        read=timedelta(seconds=5.0),
+        write=timedelta(seconds=5.0),
+        pool=timedelta(seconds=5.0),
+    )
     assert timeout == httpx.Timeout(timeout=5.0)
 
 
@@ -133,8 +149,18 @@ def test_timeout_from_one_value():
     assert timeout == httpx.Timeout(timeout=(None, 5.0, None, None))
 
 
+def test_timeout_from_one_timedelta_value():
+    timeout = httpx.Timeout(None, read=timedelta(seconds=5.0))
+    assert timeout == httpx.Timeout(timeout=(None, 5.0, None, None))
+
+
 def test_timeout_from_one_value_and_default():
     timeout = httpx.Timeout(5.0, pool=60.0)
+    assert timeout == httpx.Timeout(timeout=(5.0, 5.0, 5.0, 60.0))
+
+
+def test_timeout_from_one_value_and_default_timedelta():
+    timeout = httpx.Timeout(timedelta(seconds=5.0), pool=timedelta(seconds=60.0))
     assert timeout == httpx.Timeout(timeout=(5.0, 5.0, 5.0, 60.0))
 
 
@@ -145,6 +171,18 @@ def test_timeout_missing_default():
 
 def test_timeout_from_tuple():
     timeout = httpx.Timeout(timeout=(5.0, 5.0, 5.0, 5.0))
+    assert timeout == httpx.Timeout(timeout=5.0)
+
+
+def test_timeout_from_timedelta_tuple():
+    timeout = httpx.Timeout(
+        timeout=(
+            timedelta(seconds=5.0),
+            timedelta(seconds=5.0),
+            timedelta(seconds=5.0),
+            timedelta(seconds=5.0),
+        )
+    )
     assert timeout == httpx.Timeout(timeout=5.0)
 
 
