@@ -98,7 +98,7 @@ $ pip install httpx
 Or, to include the optional HTTP/2 support, use:
 
 ```shell
-$ pip install httpx[http2]
+$ pip install 'httpx[http2]'
 ```
 
 HTTPX requires Python 3.9+.
