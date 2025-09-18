@@ -83,6 +83,9 @@ class NetworkStream(Stream):
             self._is_closed = True
             self._socket.close()
 
+    def is_closed(self) -> bool:
+        return self._is_closed
+
     def __repr__(self):
         description = ""
         description += " TLS" if self._is_tls else ""
@@ -160,7 +163,7 @@ class NetworkServer:
         self._max_workers = 5
         self._executor = None
         self._thread = None
-        self._streams = list[NetworkStream]
+        self._streams: list[NetworkStream] = []
 
     @property
     def host(self):
@@ -177,11 +180,18 @@ class NetworkServer:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.listener.close()
+        for stream in self._streams:
+            stream.close()
         self._executor.shutdown(wait=True)
 
     def _serve(self):
         while stream := self.listener.accept():
             self._executor.submit(self._handler, stream)
+            self._streams = [
+                stream for stream in self._streams
+                if not stream.is_closed()
+            ]
+            self._streams.append(stream)
 
     def _handler(self, stream):
         try:

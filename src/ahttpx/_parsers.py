@@ -375,13 +375,13 @@ class HTTPParser:
             self.recv_state = State.DONE
         return body
 
-    async def complete(self):
+    async def reset(self) -> bool:
         is_fully_complete = self.send_state == State.DONE and self.recv_state == State.DONE
         is_keepalive = self.send_keep_alive and self.recv_keep_alive
 
         if not (is_fully_complete and is_keepalive):
             await self.close()
-            return
+            return False
 
         if self.mode == Mode.CLIENT:
             self.send_state = State.SEND_METHOD_LINE
@@ -397,6 +397,7 @@ class HTTPParser:
         self.send_keep_alive = True
         self.recv_keep_alive = True
         self.processing_1xx = False
+        return True
 
     async def close(self):
         if self.send_state != State.CLOSED:

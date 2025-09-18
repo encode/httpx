@@ -67,7 +67,7 @@ def test_parser():
     assert terminator == b''
 
     assert not p.is_idle()
-    p.complete()
+    p.reset()
     assert p.is_idle()
 
 
@@ -113,7 +113,7 @@ def test_parser_server():
     )
 
     assert not p.is_idle()
-    p.complete()
+    p.reset()
     assert p.is_idle()
 
 
@@ -315,7 +315,7 @@ def test_parser_repr():
     p.recv_body()
     assert repr(p) == "<HTTPParser [client DONE, server DONE]>"
 
-    p.complete()
+    p.reset()
     assert repr(p) == "<HTTPParser [client SEND_METHOD_LINE, server WAIT]>"
 
 
@@ -554,7 +554,7 @@ def test_client_connection_close():
 
     assert repr(p) == "<HTTPParser [client DONE, server DONE]>"
 
-    p.complete()
+    p.reset()
     assert repr(p) == "<HTTPParser [client CLOSED, server CLOSED]>"
     assert p.is_closed()
 
@@ -591,7 +591,7 @@ def test_server_connection_close():
     assert terminator == b""
 
     assert repr(p) == "<HTTPParser [client DONE, server DONE]>"
-    p.complete()
+    p.reset()
     assert repr(p) == "<HTTPParser [client CLOSED, server CLOSED]>"
 
 

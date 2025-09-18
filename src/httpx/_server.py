@@ -33,7 +33,7 @@ class HTTPConnection:
         try:
             while not self._parser.is_closed():
                 method, url, headers = self._recv_head()
-                stream = HTTPStream(self._recv_body, self._complete)
+                stream = HTTPStream(self._recv_body, self._reset)
                 # TODO: Handle endpoint exceptions
                 with Request(method, url, headers=headers, content=stream) as request:
                     try:
@@ -49,6 +49,7 @@ class HTTPConnection:
                     else:
                         self._send_head(response)
                         self._send_body(response)
+                self._reset()
         except Exception:
             logger.error("Internal Server Error", exc_info=True)
 
@@ -88,8 +89,8 @@ class HTTPConnection:
         self._parser.send_body(b'')
 
     # Start it all over again...
-    def _complete(self):
-        self._parser.complete
+    def _reset(self):
+        self._parser.reset()
         self._idle_expiry = time.monotonic() + self._keepalive_duration
 
 
