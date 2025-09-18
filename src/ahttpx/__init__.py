@@ -1,4 +1,3 @@
-from .__version__ import __title__, __version__
 from ._client import *  # Client
 from ._content import *  # Content, File, Files, Form, HTML, JSON, MultiPart, Text
 from ._headers import *  # Headers
@@ -15,8 +14,6 @@ from ._urls import *  # QueryParams, URL
 
 
 __all__ = [
-    "__title__",
-    "__version__",
     "ByteStream",
     "Client",
     "Connection",

@@ -5,7 +5,8 @@ build-backend = "hatchling.build"
 [project]
 name = "httpx"
 description = "HTTP, for Python."
-requires-python = ">=3.10"
+version = "1.0.dev3"
+requires-python = ">=3.11"
 authors = [
     { name = "Tom Christie", email = "tom@tomchristie.com" },
 ]
@@ -24,7 +25,3 @@ classifiers = [
 dependencies = [
     "certifi",
 ]
-dynamic = ["version"]
-
-[tool.hatch.version]
-path = "src/httpx/__version__.py"
