@@ -170,7 +170,7 @@ class Connection(Transport):
         await self._send_head(request)
         await self._send_body(request)
         code, headers = await self._recv_head()
-        stream = HTTPStream(self._recv_body, self._complete)
+        stream = HTTPStream(self._recv_body, self._reset)
         # TODO...
         return Response(code, headers=headers, content=stream)
         #    finally:
@@ -235,9 +235,9 @@ class Connection(Transport):
     async def _recv_body(self) -> bytes:
         return await self._parser.recv_body()
 
-    # Request/response cycle complete...
-    async def _complete(self) -> None:
-        await self._parser.complete()
+    # Request/response cycle reset...
+    async def _reset(self) -> None:
+        await self._parser.reset()
         self._idle_expiry = time.monotonic() + self._keepalive_duration
 
     async def _close(self) -> None:
