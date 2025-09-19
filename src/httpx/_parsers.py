@@ -405,6 +405,13 @@ class HTTPParser:
             self.recv_state = State.CLOSED
             self.stream.close()
 
+    def is_keepalive(self) -> bool:
+        return (
+            self.send_keep_alive and
+            self.recv_keep_alive and
+            self.send_state != State.CLOSED
+        )
+
     def is_idle(self) -> bool:
         return (
             self.send_state == State.SEND_METHOD_LINE or

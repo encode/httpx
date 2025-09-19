@@ -43,12 +43,14 @@ class HTTPConnection:
                     except Exception:
                         logger.error("Internal Server Error", exc_info=True)
                         content = Text("Internal Server Error")
-                        err = Response(code=500, content=content)
+                        err = Response(500, content=content)
                         self._send_head(err)
                         self._send_body(err)
                     else:
                         self._send_head(response)
                         self._send_body(response)
+                if self._parser.is_keepalive():
+                    stream.read()
                 self._reset()
         except Exception:
             logger.error("Internal Server Error", exc_info=True)
@@ -100,7 +102,10 @@ class HTTPServer:
 
     def wait(self):
         while(True):
-            sleep(1)
+            try:
+                sleep(1)
+            except KeyboardInterrupt:
+                break
 
 
 @contextlib.contextmanager

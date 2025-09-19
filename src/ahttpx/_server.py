@@ -49,6 +49,8 @@ class HTTPConnection:
                     else:
                         await self._send_head(response)
                         await self._send_body(response)
+                if self._parser.is_keepalive():
+                    await stream.read()
                 await self._reset()
         except Exception:
             logger.error("Internal Server Error", exc_info=True)
