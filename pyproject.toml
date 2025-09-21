@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "httpx"
 description = "The next generation HTTP client."
 license = "BSD-3-Clause"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
     { name = "Tom Christie", email = "tom@tomchristie.com" },
 ]
@@ -20,11 +20,11 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
@@ -32,7 +32,6 @@ dependencies = [
     "httpcore==1.*",
     "anyio",
     "idna",
-    "sniffio",
 ]
 dynamic = ["readme", "version"]
 
@@ -44,7 +43,7 @@ brotli = [
 cli = [
     "click==8.*",
     "pygments==2.*",
-    "rich>=10,<14",
+    "rich>=10,<15",
 ]
 http2 = [
     "h2>=3,<5",
@@ -129,5 +128,5 @@ markers = [
 ]
 
 [tool.coverage.run]
-omit = ["venv/*", "httpx/_compat.py"]
+omit = ["venv/*"]
 include = ["httpx/*", "tests/*"]

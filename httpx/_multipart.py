@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import io
+import mimetypes
 import os
+import re
 import typing
 from pathlib import Path
 
@@ -14,12 +16,41 @@ from ._types import (
     SyncByteStream,
 )
 from ._utils import (
-    format_form_param,
-    guess_content_type,
     peek_filelike_length,
     primitive_value_to_str,
     to_bytes,
 )
+
+_HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
+_HTML5_FORM_ENCODING_REPLACEMENTS.update(
+    {chr(c): "%{:02X}".format(c) for c in range(0x1F + 1) if c != 0x1B}
+)
+_HTML5_FORM_ENCODING_RE = re.compile(
+    r"|".join([re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS.keys()])
+)
+
+
+def _format_form_param(name: str, value: str) -> bytes:
+    """
+    Encode a name/value pair within a multipart form.
+    """
+
+    def replacer(match: typing.Match[str]) -> str:
+        return _HTML5_FORM_ENCODING_REPLACEMENTS[match.group(0)]
+
+    value = _HTML5_FORM_ENCODING_RE.sub(replacer, value)
+    return f'{name}="{value}"'.encode()
+
+
+def _guess_content_type(filename: str | None) -> str | None:
+    """
+    Guesses the mimetype based on a filename. Defaults to `application/octet-stream`.
+
+    Returns `None` if `filename` is `None` or empty.
+    """
+    if filename:
+        return mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return None
 
 
 def get_multipart_boundary_from_content_type(
@@ -58,7 +89,7 @@ class DataField:
 
     def render_headers(self) -> bytes:
         if not hasattr(self, "_headers"):
-            name = format_form_param("name", self.name)
+            name = _format_form_param("name", self.name)
             self._headers = b"".join(
                 [b"Content-Disposition: form-data; ", name, b"\r\n\r\n"]
             )
@@ -115,7 +146,7 @@ class FileField:
             fileobj = value
 
         if content_type is None:
-            content_type = guess_content_type(filename)
+            content_type = _guess_content_type(filename)
 
         has_content_type_header = any("content-type" in key.lower() for key in headers)
         if content_type is not None and not has_content_type_header:
@@ -156,10 +187,10 @@ class FileField:
         if not hasattr(self, "_headers"):
             parts = [
                 b"Content-Disposition: form-data; ",
-                format_form_param("name", self.name),
+                _format_form_param("name", self.name),
             ]
             if self.filename:
-                filename = format_form_param("filename", self.filename)
+                filename = _format_form_param("filename", self.filename)
                 parts.extend([b"; ", filename])
             for header_name, header_value in self.headers.items():
                 key, val = f"\r\n{header_name}: ".encode(), header_value.encode()

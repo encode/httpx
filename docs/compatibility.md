@@ -143,7 +143,7 @@ Within a `stream()` block request data is made available with:
 * `.iter_text()` - Instead of `response.iter_content(decode_unicode=True)`
 * `.iter_lines()` - Corresponding to `response.iter_lines()`
 * `.iter_raw()` - Use this instead of `response.raw`
-* `.read()` - Read the entire response body, making `request.text` and `response.content` available.
+* `.read()` - Read the entire response body, making `response.text` and `response.content` available.
 
 ## Timeouts
 
@@ -171,11 +171,9 @@ Also note that `requests.Session.request(...)` allows a `proxies=...` parameter,
 
 ## SSL configuration
 
-When using a `Client` instance, the `trust_env`, `verify`, and `cert` arguments should always be passed on client instantiation, rather than passed to the request method.
+When using a `Client` instance, the ssl configurations should always be passed on client instantiation, rather than passed to the request method.
 
 If you need more than one different SSL configuration, you should use different client instances for each SSL configuration.
-
-Requests supports `REQUESTS_CA_BUNDLE` which points to either a file or a directory. HTTPX supports the `SSL_CERT_FILE` (for a file) and `SSL_CERT_DIR` (for a directory) OpenSSL variables instead.
 
 ## Request body on HTTP methods
 
@@ -228,3 +226,7 @@ For both query params (`params=`) and form data (`data=`), `requests` supports s
 In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response.
 
 If you are looking for more control, consider checking out [Custom Transports](advanced/transports.md#custom-transports).
+
+## Exceptions and Errors
+
+`requests` exception hierarchy is slightly different to the `httpx` exception hierarchy. `requests` exposes a top level `RequestException`, where as `httpx` exposes a top level `HTTPError`. see the exceptions exposes in requests [here](https://requests.readthedocs.io/en/latest/_modules/requests/exceptions/). See the `httpx` error hierarchy [here](https://www.python-httpx.org/exceptions/).

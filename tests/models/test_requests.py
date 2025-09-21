@@ -62,7 +62,7 @@ def test_json_encoded_data():
     request.read()
 
     assert request.headers["Content-Type"] == "application/json"
-    assert request.content == b'{"test": 123}'
+    assert request.content == b'{"test":123}'
 
 
 def test_headers():
@@ -71,7 +71,7 @@ def test_headers():
     assert request.headers == {
         "Host": "example.org",
         "Content-Type": "application/json",
-        "Content-Length": "13",
+        "Content-Length": "12",
     }
 
 
@@ -183,12 +183,12 @@ def test_request_picklable():
     assert pickle_request.method == "POST"
     assert pickle_request.url.path == "/"
     assert pickle_request.headers["Content-Type"] == "application/json"
-    assert pickle_request.content == b'{"test": 123}'
+    assert pickle_request.content == b'{"test":123}'
     assert pickle_request.stream is not None
     assert request.headers == {
         "Host": "example.org",
         "Content-Type": "application/json",
-        "content-length": "13",
+        "content-length": "12",
     }
 
 
@@ -226,3 +226,16 @@ def test_request_generator_content_picklable():
     request.read()
     pickle_request = pickle.loads(pickle.dumps(request))
     assert pickle_request.content == b"test 123"
+
+
+def test_request_params():
+    request = httpx.Request("GET", "http://example.com", params={})
+    assert str(request.url) == "http://example.com"
+
+    request = httpx.Request(
+        "GET", "http://example.com?c=3", params={"a": "1", "b": "2"}
+    )
+    assert str(request.url) == "http://example.com?a=1&b=2"
+
+    request = httpx.Request("GET", "http://example.com?a=1", params={})
+    assert str(request.url) == "http://example.com"

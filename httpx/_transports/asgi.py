@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import typing
 
-import sniffio
-
 from .._models import Request, Response
 from .._types import AsyncByteStream
 from .base import AsyncBaseTransport
@@ -28,15 +26,30 @@ _ASGIApp = typing.Callable[
 __all__ = ["ASGITransport"]
 
 
+def is_running_trio() -> bool:
+    try:
+        # sniffio is a dependency of trio.
+
+        # See https://github.com/python-trio/trio/issues/2802
+        import sniffio
+
+        if sniffio.current_async_library() == "trio":
+            return True
+    except ImportError:  # pragma: nocover
+        pass
+
+    return False
+
+
 def create_event() -> Event:
-    if sniffio.current_async_library() == "trio":
+    if is_running_trio():
         import trio
 
         return trio.Event()
-    else:
-        import asyncio
 
-        return asyncio.Event()
+    import asyncio
+
+    return asyncio.Event()
 
 
 class ASGIResponseStream(AsyncByteStream):

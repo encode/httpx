@@ -174,8 +174,9 @@ Form encoded data can also include multiple values from a given key.
 You can also upload files, using HTTP multipart encoding:
 
 ```pycon
->>> files = {'upload-file': open('report.xls', 'rb')}
->>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> with open('report.xls', 'rb') as report_file:
+...     files = {'upload-file': report_file}
+...     r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
 {
   ...
@@ -190,8 +191,9 @@ You can also explicitly set the filename and content type, by using a tuple
 of items for the file value:
 
 ```pycon
->>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
->>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> with open('report.xls', 'rb') report_file:
+...     files = {'upload-file': ('report.xls', report_file, 'application/vnd.ms-excel')}
+...     r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
 {
   ...
@@ -206,8 +208,9 @@ If you need to include non-file data fields in the multipart form, use the `data
 
 ```pycon
 >>> data = {'message': 'Hello, world!'}
->>> files = {'file': open('report.xls', 'rb')}
->>> r = httpx.post("https://httpbin.org/post", data=data, files=files)
+>>> with open('report.xls', 'rb') as report_file:
+...     files = {'file': report_file}
+...     r = httpx.post("https://httpbin.org/post", data=data, files=files)
 >>> print(r.text)
 {
   ...
