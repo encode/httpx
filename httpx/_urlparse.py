@@ -211,14 +211,15 @@ class ParseResult(typing.NamedTuple):
 
 
 def _check_ascii_printable(url: str, key: str | None = None) -> None:
-    for idx, char in enumerate(url):
-        if char.isascii() and not char.isprintable():
-            error = "Invalid non-printable ASCII character in URL"
-            if key is None:
-                error += f", {char!r} at position {idx}."
-            else:
-                error += f" {key} component, {char!r} at position {idx}."
-            raise InvalidURL(error)
+    if any(char.isascii() and not char.isprintable() for char in url):
+        char = next(char for char in url if char.isascii() and not char.isprintable())
+        idx = url.find(char)
+        component = f" {key} component" if key else ""
+        error = (
+            f"Invalid non-printable ASCII character in URL{component},"
+            f" {char!r} at position {idx}."
+        )
+        raise InvalidURL(error)
 
 
 def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
