@@ -16,7 +16,7 @@ Or configured on the client instance, ensuring that all outgoing requests will i
 
 ## Basic authentication
 
-HTTP basic authentication is an unencrypted authentication scheme that uses a simple encoding of the username and password in the request `Authorization` header. Since it is unencrypted it should typically only be used over `https`, although this is not strictly enforced.
+HTTP basic authentication ([RFC 7617](https://datatracker.ietf.org/doc/html/rfc7617)) is an unencrypted authentication scheme that uses a simple encoding of the username and password in the request `Authorization` header. Since it is unencrypted it should typically only be used over `https`, although this is not strictly enforced.
 
 ```pycon
 >>> auth = httpx.BasicAuth(username="finley", password="secret")
@@ -26,9 +26,28 @@ HTTP basic authentication is an unencrypted authentication scheme that uses a si
 <Response [200 OK]>
 ```
 
+## Bearer Token authentication
+
+Bearer Token authentication ([RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750)) is an unencrypted authentication scheme that uses an API key (Bearer Token) to access OAuth 2.0-protected resources.
+There are three variants to transmit the Token:
+
+* `Authorization` Request Header Field
+* Form-Encoded Body Parameter
+* URI Query Parameter
+
+Since it is unencrypted it should typically only be used over `https`, although this is not strictly enforced.
+
+```pycon
+>>> auth = httpx.BearerTokenAuth(bearer_token="secret")
+>>> client = httpx.Client(auth=auth)
+>>> response = client.get("https://httpbin.org/bearer")
+>>> response
+<Response [200 OK]>
+```
+
 ## Digest authentication
 
-HTTP digest authentication is a challenge-response authentication scheme. Unlike basic authentication it provides encryption, and can be used over unencrypted `http` connections. It requires an additional round-trip in order to negotiate the authentication. 
+HTTP digest authentication ([RFC 7616](https://datatracker.ietf.org/doc/html/rfc7616)) is a challenge-response authentication scheme. Unlike basic authentication it provides encryption, and can be used over unencrypted `http` connections. It requires an additional round-trip in order to negotiate the authentication.
 
 ```pycon
 >>> auth = httpx.DigestAuth(username="olivia", password="secret")
