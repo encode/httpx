@@ -26,6 +26,21 @@ def test_basic_auth():
         flow.send(response)
 
 
+def test_bearer_token_auth():
+    auth = httpx.BearerTokenAuth(bearer_token="my_token")
+    request = httpx.Request("GET", "https://www.example.com")
+
+    # The initial request should include a bearer token auth header.
+    flow = auth.sync_auth_flow(request)
+    request = next(flow)
+    assert request.headers["Authorization"].startswith("Bearer ")
+
+    # No other requests are made.
+    response = httpx.Response(content=b"Hello, world!", status_code=200)
+    with pytest.raises(StopIteration):
+        flow.send(response)
+
+
 def test_digest_auth_with_200():
     auth = httpx.DigestAuth(username="user", password="pass")
     request = httpx.Request("GET", "https://www.example.com")

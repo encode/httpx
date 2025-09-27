@@ -38,6 +38,7 @@ __all__ = [
     "Auth",
     "BaseTransport",
     "BasicAuth",
+    "BearerTokenAuth",
     "ByteStream",
     "Client",
     "CloseError",
