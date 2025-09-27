@@ -32,8 +32,8 @@ Bearer Token authentication ([RFC 6750](https://datatracker.ietf.org/doc/html/rf
 There are three variants to transmit the Token:
 
 * `Authorization` Request Header Field
-* Form-Encoded Body Parameter
-* URI Query Parameter
+* Form-Encoded Body Parameter (not implemented)
+* URI Query Parameter (not implemented)
 
 Since it is unencrypted it should typically only be used over `https`, although this is not strictly enforced.
 

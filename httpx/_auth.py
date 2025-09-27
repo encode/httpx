@@ -148,7 +148,9 @@ class BearerTokenAuth(Auth):
     and uses HTTP Bearer authentication (RFC 6750).
     """
 
-    def __init__(self, bearer_token: str | bytes) -> None:
+    def __init__(self, bearer_token: str | bytes, variant: typing.Literal["HEADER", "FORM-ENCODED", "QUERY"] = "HEADER") -> None:
+        if variant != "HEADER":
+            raise NotImplementedError(f"BearerTokenAuth variant '{variant}' is not yet implemented")
         self._auth_header = self._build_auth_header(bearer_token)
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
