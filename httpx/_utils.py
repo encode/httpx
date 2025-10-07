@@ -227,6 +227,10 @@ class URLPattern:
 
 
 def is_ipv4_hostname(hostname: str) -> bool:
+    """
+    Check if the given hostname is a valid IPv4 address.
+    Supports CIDR notation by checking only the address part.
+    """
     try:
         ipaddress.IPv4Address(hostname.split("/")[0])
     except Exception:
@@ -235,8 +239,53 @@ def is_ipv4_hostname(hostname: str) -> bool:
 
 
 def is_ipv6_hostname(hostname: str) -> bool:
+    """
+    Check if the given hostname is a valid IPv6 address.
+    Supports CIDR notation by checking only the address part.
+    """
     try:
         ipaddress.IPv6Address(hostname.split("/")[0])
     except Exception:
         return False
     return True
+
+
+def is_ip_address(hostname: str) -> bool:
+    """
+    Check if the given hostname is a valid IP address (either IPv4 or IPv6).
+    Supports CIDR notation by checking only the address part.
+    """
+    return is_ipv4_hostname(hostname) or is_ipv6_hostname(hostname)
+
+
+def normalize_header_key(key: str, *, preserve_case: bool = False) -> str:
+    """
+    Normalize HTTP header keys for consistent comparison and storage.
+
+    By default, converts header keys to lowercase following HTTP/2 conventions.
+    Can optionally preserve the original case for HTTP/1.1 compatibility.
+
+    Args:
+        key: The header key to normalize
+        preserve_case: If True, preserve the original case. If False (default),
+                      convert to lowercase.
+
+    Returns:
+        The normalized header key as a string
+
+    Examples:
+        >>> normalize_header_key("Content-Type")
+        'content-type'
+        >>> normalize_header_key("Content-Type", preserve_case=True)
+        'Content-Type'
+        >>> normalize_header_key("X-Custom-Header")
+        'x-custom-header'
+
+    Note:
+        This function is useful when working with HTTP headers across different
+        protocol versions. HTTP/2 requires lowercase header names, while HTTP/1.1
+        traditionally uses title-case headers (though comparison is case-insensitive).
+    """
+    if preserve_case:
+        return key.strip()
+    return key.strip().lower()

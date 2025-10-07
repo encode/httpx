@@ -10,6 +10,7 @@ from ._status_codes import *
 from ._transports import *
 from ._types import *
 from ._urls import *
+from ._utils import normalize_header_key
 
 try:
     from ._main import main
@@ -63,6 +64,7 @@ __all__ = [
     "MockTransport",
     "NetRCAuth",
     "NetworkError",
+    "normalize_header_key",
     "options",
     "patch",
     "PoolTimeout",
