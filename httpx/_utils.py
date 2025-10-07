@@ -227,6 +227,10 @@ class URLPattern:
 
 
 def is_ipv4_hostname(hostname: str) -> bool:
+    """
+    Check if the given hostname is a valid IPv4 address.
+    Supports CIDR notation by checking only the address part.
+    """
     try:
         ipaddress.IPv4Address(hostname.split("/")[0])
     except Exception:
@@ -235,6 +239,10 @@ def is_ipv4_hostname(hostname: str) -> bool:
 
 
 def is_ipv6_hostname(hostname: str) -> bool:
+    """
+    Check if the given hostname is a valid IPv6 address.
+    Supports CIDR notation by checking only the address part.
+    """
     try:
         ipaddress.IPv6Address(hostname.split("/")[0])
     except Exception:
