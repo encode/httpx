@@ -1348,6 +1348,9 @@ class AsyncClient(BaseClient):
     * **default_encoding** - *(optional)* The default encoding to use for decoding
     response text, if no charset information is included in a response Content-Type
     header. Set to a callable for automatic character set detection. Default: "utf-8".
+    * **retry_on_timeout** - *(optional)* Automatically retry requests that timeout.
+    When enabled, the client will retry the request up to 3 times with exponential
+    backoff. Defaults to `False`.
     """
 
     def __init__(
@@ -1372,6 +1375,7 @@ class AsyncClient(BaseClient):
         transport: AsyncBaseTransport | None = None,
         trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
+        retry_on_timeout: bool = False,
     ) -> None:
         super().__init__(
             auth=auth,
