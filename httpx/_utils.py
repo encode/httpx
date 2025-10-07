@@ -248,3 +248,11 @@ def is_ipv6_hostname(hostname: str) -> bool:
     except Exception:
         return False
     return True
+
+
+def is_ip_address(hostname: str) -> bool:
+    """
+    Check if the given hostname is a valid IP address (either IPv4 or IPv6).
+    Supports CIDR notation by checking only the address part.
+    """
+    return is_ipv4_hostname(hostname) or is_ipv6_hostname(hostname)
