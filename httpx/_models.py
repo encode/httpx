@@ -791,6 +791,44 @@ class Response:
             and "Location" in self.headers
         )
 
+    @property
+    def retry_after(self) -> int | datetime.datetime | None:
+        """
+        Parse the Retry-After header and return the recommended retry delay.
+
+        Returns:
+            - An integer (seconds) if the header contains a delay in seconds
+            - A datetime object if the header contains an HTTP date
+            - None if the header is not present or cannot be parsed
+
+        The Retry-After header is commonly used in:
+        - 429 (Too Many Requests) responses to indicate rate limiting
+        - 503 (Service Unavailable) responses to indicate when service may be available
+
+        Example:
+            >>> response.status_code
+            429
+            >>> response.retry_after
+            60  # Retry after 60 seconds
+        """
+        retry_header = self.headers.get("Retry-After")
+        if retry_header is None:
+            return None
+
+        # Try parsing as an integer (delay-seconds)
+        try:
+            return int(retry_header)
+        except ValueError:
+            pass
+
+        # Try parsing as HTTP-date
+        try:
+            # Parse HTTP date format: "Wed, 21 Oct 2015 07:28:00 GMT"
+            from email.utils import parsedate_to_datetime
+            return parsedate_to_datetime(retry_header)
+        except (ValueError, TypeError):
+            return None
+
     def raise_for_status(self) -> Response:
         """
         Raise the `HTTPStatusError` if one occurred.
