@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 import httpx
@@ -13,6 +15,7 @@ async def test_read_timeout(server):
 
 
 @pytest.mark.anyio
+@pytest.mark.xfail(sys.version_info >= (3, 14), reason="Fix trio on Python >= 3.14")
 async def test_write_timeout(server):
     timeout = httpx.Timeout(None, write=1e-6)
 
