@@ -831,6 +831,127 @@ class Response:
     def json(self, **kwargs: typing.Any) -> typing.Any:
         return jsonlib.loads(self.content, **kwargs)
 
+    def json_or_text(self, **kwargs: typing.Any) -> typing.Any:
+        """
+        Attempt to parse response as JSON, falling back to text if parsing fails.
+
+        This is a convenience method that combines the behavior of `json()` and `text`.
+        It first attempts to parse the response body as JSON. If that fails due to
+        invalid JSON or an empty response, it returns the text content instead.
+
+        Args:
+            **kwargs: Additional arguments passed to json.loads() when parsing JSON.
+
+        Returns:
+            The parsed JSON data if successful, otherwise the text content of the response.
+
+        Example:
+            >>> response = httpx.get("https://api.example.com/data")
+            >>> data = response.json_or_text()  # Returns JSON dict or text string
+            >>> # Useful for APIs that may return either JSON or plain text
+            >>> response = httpx.get("https://example.com/endpoint")
+            >>> content = response.json_or_text()  # Handles both content types gracefully
+
+        Note:
+            This method is particularly useful when:
+            - Working with APIs that may return different content types
+            - You want automatic fallback behavior without exception handling
+            - Processing responses where the content type is uncertain
+        """
+        try:
+            return jsonlib.loads(self.content, **kwargs)
+        except (jsonlib.JSONDecodeError, UnicodeDecodeError, ValueError):
+            return self.text
+
+    def save_to_file(
+        self,
+        path: str,
+        mode: str = "auto",
+        *,
+        encoding: str | None = None,
+        indent: int | None = None,
+    ) -> None:
+        """
+        Save the response content to a file.
+
+        This method provides a convenient way to save response content to disk with
+        automatic handling of different content types based on the mode parameter.
+
+        Args:
+            path: The file path where the content should be saved.
+            mode: The save mode, one of:
+                - 'auto': Automatically detect based on Content-Type header
+                  (saves as JSON if content-type is application/json, binary otherwise)
+                - 'binary': Save raw bytes (use for images, PDFs, etc.)
+                - 'text': Save as text using the response's encoding
+                - 'json': Parse as JSON and save with formatting
+            encoding: Text encoding to use when mode is 'text'. Defaults to the
+                     response's detected encoding. Only applicable for 'text' mode.
+            indent: Number of spaces for JSON indentation when mode is 'json'.
+                   Defaults to 2. Only applicable for 'json' mode.
+
+        Raises:
+            ValueError: If an invalid mode is specified.
+            OSError: If there are issues writing to the file.
+            JSONDecodeError: If mode is 'json' but content is not valid JSON.
+
+        Example:
+            >>> # Save binary content (image, PDF, etc.)
+            >>> response = httpx.get("https://example.com/image.png")
+            >>> response.save_to_file("image.png", mode="binary")
+            >>>
+            >>> # Save JSON with formatting
+            >>> response = httpx.get("https://api.example.com/data")
+            >>> response.save_to_file("data.json", mode="json", indent=4)
+            >>>
+            >>> # Auto-detect based on content type
+            >>> response = httpx.get("https://example.com/file")
+            >>> response.save_to_file("output.txt", mode="auto")
+            >>>
+            >>> # Save as text with specific encoding
+            >>> response = httpx.get("https://example.com/page")
+            >>> response.save_to_file("page.html", mode="text", encoding="utf-8")
+
+        Note:
+            - The 'auto' mode checks the Content-Type header to determine format
+            - For 'binary' and 'json' modes, the file is written in binary mode
+            - For 'text' mode, the file is written in text mode with specified encoding
+            - Parent directories are not created automatically; they must exist
+        """
+        import pathlib
+
+        file_path = pathlib.Path(path)
+
+        if mode not in ("auto", "binary", "text", "json"):
+            raise ValueError(
+                f"Invalid mode '{mode}'. Must be one of: 'auto', 'binary', 'text', 'json'"
+            )
+
+        # Determine actual mode if auto
+        if mode == "auto":
+            content_type = self.headers.get("content-type", "").lower()
+            if "application/json" in content_type:
+                mode = "json"
+            elif any(
+                t in content_type
+                for t in ["text/", "application/xml", "application/javascript"]
+            ):
+                mode = "text"
+            else:
+                mode = "binary"
+
+        # Save based on determined mode
+        if mode == "binary":
+            file_path.write_bytes(self.content)
+        elif mode == "text":
+            text_encoding = encoding or self.encoding or "utf-8"
+            file_path.write_text(self.text, encoding=text_encoding)
+        elif mode == "json":
+            json_data = self.json()
+            json_indent = 2 if indent is None else indent
+            formatted_json = jsonlib.dumps(json_data, indent=json_indent, ensure_ascii=False)
+            file_path.write_text(formatted_json, encoding="utf-8")
+
     @property
     def cookies(self) -> Cookies:
         if not hasattr(self, "_cookies"):
