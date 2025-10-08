@@ -831,6 +831,67 @@ class Response:
     def json(self, **kwargs: typing.Any) -> typing.Any:
         return jsonlib.loads(self.content, **kwargs)
 
+    def json_safe(
+        self,
+        default: typing.Any = None,
+        *,
+        raise_for_status: bool = True,
+        **kwargs: typing.Any,
+    ) -> typing.Any:
+        """
+        Safely parse JSON response content with error handling.
+
+        Unlike the standard `json()` method, this method provides graceful error
+        handling for common failure cases when parsing JSON responses.
+
+        Args:
+            default: Value to return if JSON parsing fails or response is empty.
+                    Defaults to None.
+            raise_for_status: If True (default), raises HTTPStatusError for 4xx/5xx
+                            responses before attempting to parse JSON. If False, attempts
+                            to parse JSON regardless of status code.
+            **kwargs: Additional arguments passed to json.loads()
+
+        Returns:
+            The parsed JSON data, or the default value if parsing fails.
+
+        Example:
+            >>> response = httpx.get("https://api.example.com/data")
+            >>> data = response.json_safe(default={})  # Returns {} if parsing fails
+            >>> # Handle rate limiting gracefully
+            >>> response = httpx.get("https://api.example.com/endpoint")
+            >>> data = response.json_safe(default={"error": "rate limited"}, raise_for_status=False)
+
+        Note:
+            This method is particularly useful when:
+            - Dealing with unreliable APIs that may return malformed JSON
+            - You want a default value instead of raising exceptions
+            - You need to handle both HTTP errors and JSON parse errors uniformly
+        """
+        # Check status code if requested
+        if raise_for_status and self.is_error:
+            request = self._request
+            if request is None:
+                raise RuntimeError(
+                    "Cannot call `json_safe` with raise_for_status=True "
+                    "as the request instance has not been set on this response."
+                )
+            raise HTTPStatusError(
+                f"HTTP error {self.status_code} while requesting {request.url}",
+                request=request,
+                response=self,
+            )
+
+        # Return default for empty content
+        if not self.content:
+            return default
+
+        # Try to parse JSON
+        try:
+            return jsonlib.loads(self.content, **kwargs)
+        except (jsonlib.JSONDecodeError, UnicodeDecodeError, ValueError):
+            return default
+
     @property
     def cookies(self) -> Cookies:
         if not hasattr(self, "_cookies"):
