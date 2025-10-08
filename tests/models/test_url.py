@@ -285,7 +285,7 @@ def test_url_leading_dot_prefix_on_relative_url():
 
 def test_param_with_space():
     # Params passed as form key-value pairs should be form escaped,
-    # Including the special case of "+" for space seperators.
+    # Including the special case of "+" for space separators.
     url = httpx.URL("http://webservice", params={"u": "with spaces"})
     assert str(url) == "http://webservice?u=with+spaces"
 
