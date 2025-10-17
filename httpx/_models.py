@@ -7,11 +7,13 @@ import json as jsonlib
 import re
 import typing
 import urllib.request
+import warnings
 from collections.abc import Mapping
 from http.cookiejar import Cookie, CookieJar
 
 from ._content import ByteStream, UnattachedStream, encode_request, encode_response
 from ._decoders import (
+    BROTLI_INSTALLED,
     SUPPORTED_DECODERS,
     ByteChunker,
     ContentDecoder,
@@ -704,13 +706,25 @@ class Response:
         if not hasattr(self, "_decoder"):
             decoders: list[ContentDecoder] = []
             values = self.headers.get_list("content-encoding", split_commas=True)
+            warned_missing_brotli = False
             for value in values:
                 value = value.strip().lower()
-                try:
-                    decoder_cls = SUPPORTED_DECODERS[value]
-                    decoders.append(decoder_cls())
-                except KeyError:
+                decoder_cls = SUPPORTED_DECODERS.get(value)
+                if decoder_cls is None:
+                    if (
+                        value == "br"
+                        and not BROTLI_INSTALLED
+                        and not warned_missing_brotli
+                    ):
+                        warned_missing_brotli = True
+                        warnings.warn(
+                            "Received 'Content-Encoding: br' but Brotli support is disabled. "
+                            "Install httpx[brotli] to decode this response.",
+                            UserWarning,
+                            stacklevel=3,
+                        )
                     continue
+                decoders.append(decoder_cls())
 
             if len(decoders) == 1:
                 self._decoder = decoders[0]

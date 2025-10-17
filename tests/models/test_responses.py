@@ -913,6 +913,22 @@ def test_value_error_without_request(header_value):
         httpx.Response(200, headers=headers, content=broken_compressed_body)
 
 
+def test_warns_when_brotli_support_missing(monkeypatch):
+    monkeypatch.setattr(httpx._decoders, "BROTLI_INSTALLED", False, raising=False)
+    monkeypatch.setattr(httpx._models, "BROTLI_INSTALLED", False, raising=False)
+    if "br" in httpx._decoders.SUPPORTED_DECODERS:
+        monkeypatch.delitem(httpx._decoders.SUPPORTED_DECODERS, "br", raising=False)
+
+    with pytest.warns(UserWarning, match="Content-Encoding: br"):
+        response = httpx.Response(
+            200,
+            headers={"Content-Encoding": "br"},
+            content=b"brotli-payload",
+        )
+
+    assert response.content == b"brotli-payload"
+
+
 def test_response_with_unset_request():
     response = httpx.Response(200, content=b"Hello, world!")
 

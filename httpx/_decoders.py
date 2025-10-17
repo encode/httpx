@@ -26,12 +26,15 @@ except ImportError:  # pragma: no cover
         brotli = None
 
 
+BROTLI_INSTALLED = brotli is not None
+
 # Zstandard support is optional
 try:
     import zstandard
 except ImportError:  # pragma: no cover
     zstandard = None  # type: ignore
 
+ZSTANDARD_INSTALLED = zstandard is not None
 
 class ContentDecoder:
     def decode(self, data: bytes) -> bytes:
@@ -387,7 +390,7 @@ SUPPORTED_DECODERS = {
 }
 
 
-if brotli is None:
+if not BROTLI_INSTALLED:
     SUPPORTED_DECODERS.pop("br")  # pragma: no cover
-if zstandard is None:
+if not ZSTANDARD_INSTALLED:
     SUPPORTED_DECODERS.pop("zstd")  # pragma: no cover
