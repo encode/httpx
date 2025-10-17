@@ -235,10 +235,9 @@ class TestServer(Server):
     async def serve(self, sockets=None):
         self.restart_requested = asyncio.Event()
 
-        loop = asyncio.get_event_loop()
         tasks = {
-            loop.create_task(super().serve(sockets=sockets)),
-            loop.create_task(self.watch_restarts()),
+            asyncio.create_task(super().serve(sockets=sockets)),
+            asyncio.create_task(self.watch_restarts()),
         }
         await asyncio.wait(tasks)
 
@@ -269,7 +268,15 @@ class TestServer(Server):
 
 
 def serve_in_thread(server: TestServer) -> typing.Iterator[TestServer]:
-    thread = threading.Thread(target=server.run)
+    def run_server():
+        # Manually set up event loop for Python 3.14 compatibility
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        server.config.setup_event_loop()
+        loop.run_until_complete(server.serve())
+        loop.close()
+
+    thread = threading.Thread(target=run_server)
     thread.start()
     try:
         while not server.started:
@@ -282,6 +289,6 @@ def serve_in_thread(server: TestServer) -> typing.Iterator[TestServer]:
 
 @pytest.fixture(scope="session")
 def server() -> typing.Iterator[TestServer]:
-    config = Config(app=app, lifespan="off", loop="asyncio")
+    config = Config(app=app, lifespan="off")
     server = TestServer(config=config)
     yield from serve_in_thread(server)
