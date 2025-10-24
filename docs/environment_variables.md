@@ -51,3 +51,29 @@ python -c "import httpx; httpx.get('http://example.com')"
 python -c "import httpx; httpx.get('http://127.0.0.1:5000/my-api')"
 python -c "import httpx; httpx.get('https://www.python-httpx.org')"
 ```
+
+## `SSL_CERT_FILE`
+
+Valid values: a filename
+
+If this environment variable is set then HTTPX will load
+CA certificate from the specified file instead of the default
+location.
+
+Example:
+
+```console
+SSL_CERT_FILE=/path/to/ca-certs/ca-bundle.crt python -c "import httpx; httpx.get('https://example.com')"
+```
+
+## `SSL_CERT_DIR`
+
+Valid values: a directory following an [OpenSSL specific layout](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html).
+
+If this environment variable is set and the directory follows an [OpenSSL specific layout](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html) (ie. you ran `c_rehash`) then HTTPX will load CA certificates from this directory instead of the default location.
+
+Example:
+
+```console
+SSL_CERT_DIR=/path/to/ca-certs/ python -c "import httpx; httpx.get('https://example.com')"
+```
