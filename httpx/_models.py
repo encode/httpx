@@ -67,7 +67,7 @@ def _is_known_encoding(encoding: str) -> bool:
 def _normalize_header_key(
     key: str | bytes,
     encoding: str | None = None,
-    header_name: str | bytes | None = None,
+    header_name: str | bytes = "",
 ) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header key.
@@ -83,22 +83,22 @@ def _normalize_header_key(
                 if isinstance(header_name, str)
                 else header_name.decode("ascii", errors="replace")
             )
-            header_info = f" '{name_str}'"
+            msg = f"Header name '{name_str}' contains non-ASCII characters"
         else:
-            header_info = ""
+            msg = "Header name contains non-ASCII characters"
         raise UnicodeEncodeError(
             exc.encoding,
             exc.object,
             exc.start,
             exc.end,
-            f"Header name{header_info} contains non-ASCII characters",
+            msg,
         ) from exc
 
 
 def _normalize_header_value(
     value: str | bytes,
     encoding: str | None = None,
-    header_name: str | bytes | None = None,
+    header_name: str | bytes = "",
 ) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header value.
@@ -116,15 +116,15 @@ def _normalize_header_value(
                 if isinstance(header_name, str)
                 else header_name.decode("ascii", errors="replace")
             )
-            header_info = f" '{name_str}'"
+            msg = f"Header '{name_str}' value contains non-ASCII characters"
         else:
-            header_info = ""
+            msg = "Header value contains non-ASCII characters"
         raise UnicodeEncodeError(
             exc.encoding,
             exc.object,
             exc.start,
             exc.end,
-            f"Header{header_info} value contains non-ASCII characters",
+            msg,
         ) from exc
 
 
