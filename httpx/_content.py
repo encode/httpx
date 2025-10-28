@@ -133,12 +133,12 @@ def encode_content(
         return headers, IteratorByteStream(content)  # type: ignore
 
     elif isinstance(content, AsyncIterable):
-        if isinstance(content, AsyncFile):
-            content_length_or_none = peek_filelike_length(content)
-        if content_length_or_none is None:
-            headers = {"Transfer-Encoding": "chunked"}
-        else:
+        if isinstance(content, AsyncFile) and (
+            content_length_or_none := peek_filelike_length(content)
+        ):
             headers = {"Content-Length": str(content_length_or_none)}
+        else:
+            headers = {"Transfer-Encoding": "chunked"}
         return headers, AsyncIteratorByteStream(content)
 
     raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
