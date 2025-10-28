@@ -526,16 +526,13 @@ def test_allow_nan_false():
 @pytest.mark.parametrize("client_method", ["put", "post"])
 @pytest.mark.anyio
 async def test_chunked_async_file_content(
-    tmp_path, anyio_backend, monkeypatch, client_method
+    tmp_path, anyio_backend, monkeypatch, client_method, server
 ):
     total_chunks = 3
-
-    def echo_request_content(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, content=request.content)
-
     content_bytes = b"".join([b"a" * AsyncIteratorByteStream.CHUNK_SIZE] * total_chunks)
     to_upload = tmp_path / "upload.txt"
     to_upload.write_bytes(content_bytes)
+    url = server.url.copy_with(path="/echo_body")
 
     async def checks(
         client: httpx.AsyncClient, async_file: AsyncReadableBinaryFile
@@ -557,9 +554,7 @@ async def test_chunked_async_file_content(
 
         monkeypatch.setattr(async_file, "read", mock_read)
         monkeypatch.setattr(async_file, "fileno", mock_fileno)
-        response = await getattr(client, client_method)(
-            url="http://127.0.0.1:8000/", content=async_file
-        )
+        response = await getattr(client, client_method)(url=url, content=async_file)
         assert response.status_code == 200
         assert response.content == content_bytes
         assert response.request.headers["Content-Length"] == str(len(content_bytes))
@@ -570,9 +565,7 @@ async def test_chunked_async_file_content(
         await anyio.open_file(to_upload, mode="rb")
         if anyio_backend != "trio"
         else await trio.open_file(to_upload, mode="rb") as async_file,
-        httpx.AsyncClient(
-            transport=httpx.MockTransport(echo_request_content)
-        ) as client,
+        httpx.AsyncClient() as client,
     ):
         assert is_async_readable_binary_file(async_file)
         await checks(client, async_file)
@@ -580,9 +573,7 @@ async def test_chunked_async_file_content(
     if anyio_backend != "trio":  # aiofiles doesn't work with trio
         async with (
             aiofiles.open(to_upload, mode="rb") as aio_file,
-            httpx.AsyncClient(
-                transport=httpx.MockTransport(echo_request_content)
-            ) as client,
+            httpx.AsyncClient() as client,
         ):
             assert is_async_readable_binary_file(aio_file)
             await checks(client, aio_file)

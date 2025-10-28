@@ -8,6 +8,7 @@ from typing import (
     IO,
     TYPE_CHECKING,
     Any,
+    AnyStr,
     AsyncIterable,
     AsyncIterator,
     Callable,
@@ -23,7 +24,7 @@ from typing import (
     Union,
 )
 
-from typing_extensions import TypeGuard
+from ._compat import TypeIs
 
 if TYPE_CHECKING:  # pragma: no cover
     from ._auth import Auth  # noqa: F401
@@ -75,7 +76,18 @@ ResponseExtensions = Mapping[str, Any]
 
 RequestData = Mapping[str, Any]
 
-FileContent = Union[IO[bytes], bytes, str]
+
+class AsyncReadableBinaryFile(Protocol):
+    async def __aiter__(self) -> AsyncIterator[AnyStr]: ...
+
+    async def read(self, size: int = -1) -> AnyStr: ...
+
+    def fileno(self) -> int: ...
+
+    async def seek(self, offset: int, whence: int | None = ...) -> int: ...
+
+
+FileContent = Union[IO[bytes], bytes, str, AsyncReadableBinaryFile]
 FileTypes = Union[
     # file (or bytes)
     FileContent,
@@ -118,15 +130,7 @@ class AsyncByteStream:
         pass
 
 
-class AsyncReadableBinaryFile(Protocol):
-    async def __aiter__(self) -> AsyncIterator[bytes]: ...
-
-    async def read(self, size: int = -1) -> bytes: ...
-
-    def fileno(self) -> int: ...
-
-
-def is_async_readable_binary_file(fp: Any) -> TypeGuard[AsyncReadableBinaryFile]:
+def is_async_readable_binary_file(fp: Any) -> TypeIs[AsyncReadableBinaryFile]:
     return (
         isinstance(fp, AsyncIterable)
         and hasattr(fp, "read")
@@ -134,6 +138,6 @@ def is_async_readable_binary_file(fp: Any) -> TypeGuard[AsyncReadableBinaryFile]
         and hasattr(fp, "fileno")
         and callable(fp.fileno)
         and not inspect.iscoroutinefunction(fp.fileno)
-        and hasattr(fp, "mode")
-        and "b" in fp.mode
+        and hasattr(fp, "seek")
+        and inspect.iscoroutinefunction(fp.seek)
     )

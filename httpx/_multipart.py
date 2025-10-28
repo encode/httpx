@@ -7,6 +7,7 @@ import re
 import typing
 from pathlib import Path
 
+from ._compat import aclosing
 from ._types import (
     AsyncByteStream,
     FileContent,
@@ -14,6 +15,7 @@ from ._types import (
     RequestData,
     RequestFiles,
     SyncByteStream,
+    is_async_readable_binary_file,
 )
 from ._utils import (
     peek_filelike_length,
@@ -201,6 +203,11 @@ class FileField:
         return self._headers
 
     def render_data(self) -> typing.Iterator[bytes]:
+        if is_async_readable_binary_file(self.file):
+            raise TypeError(
+                "Invalid type for file. AsyncReadableBinaryFile is not supported."
+            )
+
         if isinstance(self.file, (str, bytes)):
             yield to_bytes(self.file)
             return
@@ -216,9 +223,26 @@ class FileField:
             yield to_bytes(chunk)
             chunk = self.file.read(self.CHUNK_SIZE)
 
+    async def arender_data(self) -> typing.AsyncGenerator[bytes]:
+        if not is_async_readable_binary_file(self.file):
+            for chunk in self.render_data():
+                yield chunk
+            return
+        await self.file.seek(0)
+        chunk = await self.file.read(self.CHUNK_SIZE)
+        while chunk:
+            yield to_bytes(chunk)
+            chunk = await self.file.read(self.CHUNK_SIZE)
+
     def render(self) -> typing.Iterator[bytes]:
         yield self.render_headers()
         yield from self.render_data()
+
+    async def arender(self) -> typing.AsyncGenerator[bytes]:
+        yield self.render_headers()
+        async with aclosing(self.arender_data()) as data:
+            async for chunk in data:
+                yield chunk
 
 
 class MultipartStream(SyncByteStream, AsyncByteStream):
@@ -262,6 +286,19 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
             yield b"\r\n"
         yield b"--%s--\r\n" % self.boundary
 
+    async def aiter_chunks(self) -> typing.AsyncGenerator[bytes]:
+        for field in self.fields:
+            yield b"--%s\r\n" % self.boundary
+            if isinstance(field, FileField):
+                async with aclosing(field.arender()) as data:
+                    async for chunk in data:
+                        yield chunk
+            else:
+                for chunk in field.render():
+                    yield chunk
+            yield b"\r\n"
+        yield b"--%s--\r\n" % self.boundary
+
     def get_content_length(self) -> int | None:
         """
         Return the length of the multipart encoded content, or `None` if
@@ -296,5 +333,6 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
             yield chunk
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        for chunk in self.iter_chunks():
-            yield chunk
+        async with aclosing(self.aiter_chunks()) as data:
+            async for chunk in data:
+                yield chunk

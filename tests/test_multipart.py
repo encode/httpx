@@ -4,9 +4,13 @@ import io
 import tempfile
 import typing
 
+import anyio
 import pytest
+import trio
 
 import httpx
+from httpx._multipart import FileField
+from httpx._types import AsyncReadableBinaryFile, is_async_readable_binary_file
 
 
 def echo_request_content(request: httpx.Request) -> httpx.Response:
@@ -467,3 +471,88 @@ class TestHeaderParamHTML5Formatting:
         files = {"upload": (filename, b"<file content>")}
         request = httpx.Request("GET", "https://www.example.com", files=files)
         assert expected in request.read()
+
+
+@pytest.mark.anyio
+async def test_chunked_async_file_multipart(
+    tmp_path, anyio_backend, monkeypatch, server
+):
+    total_chunks = 3
+
+    content_bytes = b"".join([b"a" * FileField.CHUNK_SIZE] * total_chunks)
+    to_upload = tmp_path / "upload.txt"
+    to_upload.write_bytes(content_bytes)
+    url = server.url.copy_with(path="/echo_body")
+
+    async def checks(
+        client: httpx.AsyncClient, async_file: AsyncReadableBinaryFile
+    ) -> None:
+        read_called = 0
+        fileno_called = False
+        original_read = async_file.read
+        original_fileno = async_file.fileno
+
+        async def mock_read(*args, **kwargs):
+            nonlocal read_called
+            read_called += 1
+            return await original_read(*args, **kwargs)
+
+        def mock_fileno(*args):
+            nonlocal fileno_called
+            fileno_called = True
+            return original_fileno(*args)
+
+        monkeypatch.setattr(async_file, "read", mock_read)
+        monkeypatch.setattr(async_file, "fileno", mock_fileno)
+        response = await client.post(url=url, files={"file": async_file})
+        assert response.status_code == 200
+        boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
+        boundary_bytes = boundary.encode("ascii")
+        pre_content = b"".join(
+            [
+                b"--" + boundary_bytes + b"\r\n",
+                b'Content-Disposition: form-data; name="file"; '
+                b'filename="upload.txt"\r\n',
+                b"Content-Type: text/plain\r\n",
+                b"\r\n",
+            ]
+        )
+        post_content = b"".join(
+            [
+                b"\r\n",
+                b"--" + boundary_bytes + b"--\r\n",
+            ]
+        )
+        assert response.content == b"".join(
+            [
+                pre_content,
+                content_bytes,
+                post_content,
+            ]
+        )
+        assert response.request.headers["Content-Length"] == str(
+            len(pre_content) + len(post_content) + len(content_bytes)
+        )
+        assert read_called == total_chunks + 1
+        assert fileno_called
+
+    async with (
+        await anyio.open_file(to_upload, mode="rb")
+        if anyio_backend != "trio"
+        else await trio.open_file(to_upload, mode="rb") as async_file,
+        httpx.AsyncClient() as client,
+    ):
+        assert is_async_readable_binary_file(async_file)
+
+        await checks(client, async_file)
+
+    async with (
+        await anyio.open_file(to_upload, mode="rb")
+        if anyio_backend != "trio"
+        else await trio.open_file(to_upload, mode="rb") as async_file,
+    ):
+        with (
+            httpx.Client() as sync_client,
+            pytest.raises(TypeError, match="AsyncReadableBinaryFile is not supported"),
+        ):
+            sync_client.post(url, files={"file": async_file})
