@@ -7,6 +7,7 @@ from typing import (
     IO,
     TYPE_CHECKING,
     Any,
+    AnyStr,
     AsyncIterable,
     AsyncIterator,
     Callable,
@@ -16,9 +17,11 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Protocol,
     Sequence,
     Tuple,
     Union,
+    runtime_checkable,
 )
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -112,3 +115,10 @@ class AsyncByteStream:
 
     async def aclose(self) -> None:
         pass
+
+
+@runtime_checkable
+class AsyncFile(Protocol):
+    async def read(self, size: int = -1) -> AnyStr: ...
+
+    def fileno(self) -> int: ...

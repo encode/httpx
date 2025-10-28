@@ -17,6 +17,7 @@ from ._exceptions import StreamClosed, StreamConsumed
 from ._multipart import MultipartStream
 from ._types import (
     AsyncByteStream,
+    AsyncFile,
     RequestContent,
     RequestData,
     RequestFiles,
@@ -83,6 +84,11 @@ class AsyncIteratorByteStream(AsyncByteStream):
             while chunk:
                 yield chunk
                 chunk = await self._stream.aread(self.CHUNK_SIZE)
+        elif isinstance(self._stream, AsyncFile):
+            chunk = await self._stream.read(self.CHUNK_SIZE)
+            while chunk:
+                yield chunk
+                chunk = await self._stream.read(self.CHUNK_SIZE)
         else:
             # Otherwise iterate.
             async for part in self._stream:
@@ -127,7 +133,12 @@ def encode_content(
         return headers, IteratorByteStream(content)  # type: ignore
 
     elif isinstance(content, AsyncIterable):
-        headers = {"Transfer-Encoding": "chunked"}
+        if isinstance(content, AsyncFile):
+            content_length_or_none = peek_filelike_length(content)
+        if content_length_or_none is None:
+            headers = {"Transfer-Encoding": "chunked"}
+        else:
+            headers = {"Content-Length": str(content_length_or_none)}
         return headers, AsyncIteratorByteStream(content)
 
     raise TypeError(f"Unexpected type for 'content', {type(content)!r}")

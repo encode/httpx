@@ -27,3 +27,5 @@ trio==0.31.0
 trio-typing==0.10.0
 trustme==1.2.1
 uvicorn==0.35.0
+aiofiles==25.1.0
+types-aiofiles==25.1.0.20251011

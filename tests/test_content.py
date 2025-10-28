@@ -1,9 +1,14 @@
 import io
 import typing
 
+import aiofiles
+import anyio
 import pytest
+import trio
 
 import httpx
+from httpx._content import AsyncIteratorByteStream
+from httpx._types import AsyncFile
 
 method = "POST"
 url = "https://www.example.com"
@@ -516,3 +521,66 @@ def test_allow_nan_false():
         ValueError, match="Out of range float values are not JSON compliant"
     ):
         httpx.Response(200, json=data_with_inf)
+
+
+@pytest.mark.parametrize("client_method", ["put", "post"])
+@pytest.mark.anyio
+async def test_chunked_async_file_content(
+    tmp_path, anyio_backend, monkeypatch, client_method
+):
+    total_chunks = 3
+
+    def echo_request_content(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=request.content)
+
+    content_bytes = b"".join([b"a" * AsyncIteratorByteStream.CHUNK_SIZE] * total_chunks)
+    to_upload = tmp_path / "upload.txt"
+    to_upload.write_bytes(content_bytes)
+
+    async def checks(client: httpx.AsyncClient, async_file: AsyncFile) -> None:
+        read_called = 0
+        fileno_called = 0
+        original_read = async_file.read
+        original_fileno = async_file.fileno
+
+        async def mock_read(*args, **kwargs):
+            nonlocal read_called
+            read_called += 1
+            return await original_read(*args, **kwargs)
+
+        def mock_fileno(*args):
+            nonlocal fileno_called
+            fileno_called += 1
+            return original_fileno(*args)
+
+        monkeypatch.setattr(async_file, "read", mock_read)
+        monkeypatch.setattr(async_file, "fileno", mock_fileno)
+        response = await getattr(client, client_method)(
+            url="http://127.0.0.1:8000/", content=async_file
+        )
+        assert response.status_code == 200
+        assert response.content == content_bytes
+        assert response.request.headers["Content-Length"] == str(len(content_bytes))
+        assert read_called == total_chunks + 1
+        assert fileno_called == 1
+
+    async with (
+        await anyio.open_file(to_upload, mode="rb")
+        if anyio_backend != "trio"
+        else await trio.open_file(to_upload, mode="rb") as async_file,
+        httpx.AsyncClient(
+            transport=httpx.MockTransport(echo_request_content)
+        ) as client,
+    ):
+        assert isinstance(async_file, AsyncFile)
+        await checks(client, async_file)
+
+    if anyio_backend != "trio":  # aiofiles doesn't work with trio
+        async with (
+            aiofiles.open(to_upload, mode="rb") as aio_file,
+            httpx.AsyncClient(
+                transport=httpx.MockTransport(echo_request_content)
+            ) as client,
+        ):
+            assert isinstance(aio_file, AsyncFile)
+            await checks(client, aio_file)
