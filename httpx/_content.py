@@ -17,12 +17,12 @@ from ._exceptions import StreamClosed, StreamConsumed
 from ._multipart import MultipartStream
 from ._types import (
     AsyncByteStream,
-    AsyncFile,
     RequestContent,
     RequestData,
     RequestFiles,
     ResponseContent,
     SyncByteStream,
+    is_async_readable_binary_file,
 )
 from ._utils import peek_filelike_length, primitive_value_to_str
 
@@ -84,7 +84,7 @@ class AsyncIteratorByteStream(AsyncByteStream):
             while chunk:
                 yield chunk
                 chunk = await self._stream.aread(self.CHUNK_SIZE)
-        elif isinstance(self._stream, AsyncFile):
+        elif is_async_readable_binary_file(self._stream):
             chunk = await self._stream.read(self.CHUNK_SIZE)
             while chunk:
                 yield chunk
@@ -133,7 +133,7 @@ def encode_content(
         return headers, IteratorByteStream(content)  # type: ignore
 
     elif isinstance(content, AsyncIterable):
-        if isinstance(content, AsyncFile) and (
+        if is_async_readable_binary_file(content) and (
             content_length_or_none := peek_filelike_length(content)
         ):
             headers = {"Content-Length": str(content_length_or_none)}

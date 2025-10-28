@@ -2,12 +2,12 @@
 Type definitions for type checking purposes.
 """
 
+import inspect
 from http.cookiejar import CookieJar
 from typing import (
     IO,
     TYPE_CHECKING,
     Any,
-    AnyStr,
     AsyncIterable,
     AsyncIterator,
     Callable,
@@ -21,8 +21,9 @@ from typing import (
     Sequence,
     Tuple,
     Union,
-    runtime_checkable,
 )
+
+from typing_extensions import TypeGuard
 
 if TYPE_CHECKING:  # pragma: no cover
     from ._auth import Auth  # noqa: F401
@@ -117,8 +118,22 @@ class AsyncByteStream:
         pass
 
 
-@runtime_checkable
-class AsyncFile(Protocol):
-    async def read(self, size: int = -1) -> AnyStr: ...
+class AsyncReadableBinaryFile(Protocol):
+    async def __aiter__(self) -> AsyncIterator[bytes]: ...
+
+    async def read(self, size: int = -1) -> bytes: ...
 
     def fileno(self) -> int: ...
+
+
+def is_async_readable_binary_file(fp: Any) -> TypeGuard[AsyncReadableBinaryFile]:
+    return (
+        isinstance(fp, AsyncIterable)
+        and hasattr(fp, "read")
+        and inspect.iscoroutinefunction(fp.read)
+        and hasattr(fp, "fileno")
+        and callable(fp.fileno)
+        and not inspect.iscoroutinefunction(fp.fileno)
+        and hasattr(fp, "mode")
+        and "b" in fp.mode
+    )

@@ -8,7 +8,7 @@ import trio
 
 import httpx
 from httpx._content import AsyncIteratorByteStream
-from httpx._types import AsyncFile
+from httpx._types import AsyncReadableBinaryFile, is_async_readable_binary_file
 
 method = "POST"
 url = "https://www.example.com"
@@ -537,7 +537,9 @@ async def test_chunked_async_file_content(
     to_upload = tmp_path / "upload.txt"
     to_upload.write_bytes(content_bytes)
 
-    async def checks(client: httpx.AsyncClient, async_file: AsyncFile) -> None:
+    async def checks(
+        client: httpx.AsyncClient, async_file: AsyncReadableBinaryFile
+    ) -> None:
         read_called = 0
         fileno_called = 0
         original_read = async_file.read
@@ -572,7 +574,7 @@ async def test_chunked_async_file_content(
             transport=httpx.MockTransport(echo_request_content)
         ) as client,
     ):
-        assert isinstance(async_file, AsyncFile)
+        assert is_async_readable_binary_file(async_file)
         await checks(client, async_file)
 
     if anyio_backend != "trio":  # aiofiles doesn't work with trio
@@ -582,5 +584,5 @@ async def test_chunked_async_file_content(
                 transport=httpx.MockTransport(echo_request_content)
             ) as client,
         ):
-            assert isinstance(aio_file, AsyncFile)
+            assert is_async_readable_binary_file(aio_file)
             await checks(client, aio_file)
