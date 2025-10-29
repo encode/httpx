@@ -77,7 +77,7 @@ ResponseExtensions = Mapping[str, Any]
 RequestData = Mapping[str, Any]
 
 
-class AsyncReadableBinaryFile(Protocol):
+class AsyncReadableFile(Protocol):
     async def __aiter__(self) -> AsyncIterator[AnyStr]: ...
 
     async def read(self, size: int = -1) -> AnyStr: ...
@@ -87,7 +87,7 @@ class AsyncReadableBinaryFile(Protocol):
     async def seek(self, offset: int, whence: Optional[int] = ...) -> int: ...
 
 
-FileContent = Union[IO[bytes], bytes, str, AsyncReadableBinaryFile]
+FileContent = Union[IO[bytes], bytes, str, AsyncReadableFile]
 FileTypes = Union[
     # file (or bytes)
     FileContent,
@@ -130,7 +130,7 @@ class AsyncByteStream:
         pass
 
 
-def is_async_readable_binary_file(fp: Any) -> TypeIs[AsyncReadableBinaryFile]:
+def is_async_readable_file(fp: Any) -> TypeIs[AsyncReadableFile]:
     return (
         isinstance(fp, AsyncIterable)
         and hasattr(fp, "read")

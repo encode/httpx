@@ -15,7 +15,7 @@ from ._types import (
     RequestData,
     RequestFiles,
     SyncByteStream,
-    is_async_readable_binary_file,
+    is_async_readable_file,
 )
 from ._utils import (
     peek_filelike_length,
@@ -203,9 +203,9 @@ class FileField:
         return self._headers
 
     def render_data(self) -> typing.Iterator[bytes]:
-        if is_async_readable_binary_file(self.file):
+        if is_async_readable_file(self.file):
             raise TypeError(
-                "Invalid type for file. AsyncReadableBinaryFile is not supported."
+                "Invalid type for file. AsyncReadableFile is not supported."
             )
 
         if isinstance(self.file, (str, bytes)):
@@ -224,7 +224,7 @@ class FileField:
             chunk = self.file.read(self.CHUNK_SIZE)
 
     async def arender_data(self) -> typing.AsyncGenerator[bytes]:
-        if not is_async_readable_binary_file(self.file):
+        if not is_async_readable_file(self.file):
             for chunk in self.render_data():
                 yield chunk
             return
