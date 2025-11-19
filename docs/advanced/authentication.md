@@ -228,5 +228,5 @@ class MyCustomAuth(httpx.Auth):
         yield request
 
     async def async_auth_flow(self, request):
-        raise RuntimeError("Cannot use a sync authentication class with httpx.AsyncClient")
+        raise RuntimeError("Cannot use async authentication class with httpx.AsyncClient")
 ```
