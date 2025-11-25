@@ -14,9 +14,9 @@ __all__ = ["MockTransport"]
 
 
 class MockTransport(AsyncBaseTransport, BaseTransport):
-    def __init__(self, handler: SyncHandler | AsyncHandler, duration: float | None = None) -> None:
+    def __init__(self, handler: SyncHandler | AsyncHandler, delay: timedelta | None = None) -> None:
         self.handler = handler
-        self.duration = duration
+        self.delay = delay
 
     def handle_request(
         self,
@@ -27,7 +27,7 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         if not isinstance(response, Response):  # pragma: no cover
             raise TypeError("Cannot use an async handler in a sync Client")
 
-        self.__apply_elapsed(response)
+        self._apply_elapsed(response)
         return response
 
     async def handle_async_request(
@@ -44,10 +44,18 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         if not isinstance(response, Response):
             response = await response
 
-        self.__apply_elapsed(response)
+        self._apply_elapsed(response)
         return response
 
-    def __apply_elapsed(self, response: Response) -> None:
-        if self.duration is not None:
-            response.elapsed = timedelta(seconds=self.duration)
+    def _apply_elapsed(self, response):
+        #- If the handler already set `response._elapsed`, it is preserved.
+        #- If a delay was provided to MockTransport, `.elapsed` is set to that duration.
+        #- If no delay is provided, `.elapsed` is explicitly set to None.
+        if hasattr(response, "_elapsed"):
+            return
+
+        if self.delay is not None:
+            response._elapsed = timedelta(seconds=self.delay)
+        else:
+            response._elapsed = None
         
