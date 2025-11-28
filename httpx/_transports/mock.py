@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import typing
+from datetime import timedelta
 
 from .._models import Request, Response
 from .base import AsyncBaseTransport, BaseTransport
-from datetime import timedelta
 
 SyncHandler = typing.Callable[[Request], Response]
 AsyncHandler = typing.Callable[[Request], typing.Coroutine[None, None, Response]]
@@ -15,7 +15,7 @@ __all__ = ["MockTransport"]
 
 class MockTransport(AsyncBaseTransport, BaseTransport):
     def __init__(
-        self, handler: SyncHandler | AsyncHandler, delay: timedelta | None = None
+        self, handler: SyncHandler | AsyncHandler, delay: timedelta = timedelta(0)
     ) -> None:
         self.handler = handler
         self.delay = delay

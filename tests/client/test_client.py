@@ -497,4 +497,4 @@ def test_mocktransport_sets_elapsed_none_when_no_delay():
 
     response = client.get("https://example.com")
 
-    assert response.elapsed is None
+    assert response.elapsed == timedelta(0)
