@@ -55,7 +55,10 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
             return
 
         if self.delay is not None:
-            response._elapsed = timedelta(seconds=self.delay)
+            if isinstance(self.delay, timedelta):
+                response._elapsed = self.delay
+            else:
+                response._elapsed = timedelta(seconds=self.delay)
         else:
             response._elapsed = None
         
