@@ -468,7 +468,7 @@ def test_mocktransport_preserves_handler_elapsed():
         r.elapsed = timedelta(seconds=1)
         return r
 
-    transport = httpx.MockTransport(handler, delay=0.5)
+    transport = httpx.MockTransport(handler, delay=timedelta(seconds=0.5))
     client = httpx.Client(transport=transport)
 
     response = client.get("https://example.com")
@@ -480,7 +480,7 @@ def test_mocktransport_sets_elapsed_to_delay():
     def handler(request):
         return httpx.Response(200)
 
-    transport = httpx.MockTransport(handler, delay=0.5)
+    transport = httpx.MockTransport(handler, delay=timedelta(seconds=0.5))
     client = httpx.Client(transport=transport)
 
     response = client.get("https://example.com")

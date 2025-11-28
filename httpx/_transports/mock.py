@@ -49,17 +49,11 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         self._apply_elapsed(response)
         return response
 
-    def _apply_elapsed(self, response):
+    def _apply_elapsed(self, response: Response) -> None:
         # If the handler already set `response._elapsed`, it is preserved.
         # If a delay was provided to MockTransport, `.elapsed` is set to that duration.
         # If no delay is provided, `.elapsed` is explicitly set to None.
         if hasattr(response, "_elapsed"):
             return
 
-        if self.delay is not None:
-            if isinstance(self.delay, timedelta):
-                response._elapsed = self.delay
-            else:
-                response._elapsed = timedelta(seconds=self.delay)
-        else:
-            response._elapsed = None
+        response._elapsed = self.delay
