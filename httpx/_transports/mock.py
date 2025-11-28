@@ -14,7 +14,9 @@ __all__ = ["MockTransport"]
 
 
 class MockTransport(AsyncBaseTransport, BaseTransport):
-    def __init__(self, handler: SyncHandler | AsyncHandler, delay: timedelta | None = None) -> None:
+    def __init__(
+        self, handler: SyncHandler | AsyncHandler, delay: timedelta | None = None
+    ) -> None:
         self.handler = handler
         self.delay = delay
 
@@ -61,4 +63,3 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
                 response._elapsed = timedelta(seconds=self.delay)
         else:
             response._elapsed = None
-        
