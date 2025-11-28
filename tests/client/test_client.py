@@ -460,3 +460,41 @@ def test_client_decode_text_using_explicit_encoding():
         assert response.reason_phrase == "OK"
         assert response.encoding == "ISO-8859-1"
         assert response.text == text
+
+
+def test_mocktransport_preserves_handler_elapsed():
+    def handler(request):
+        r = httpx.Response(200)
+        r.elapsed = timedelta(seconds=1)
+        return r
+
+    transport = httpx.MockTransport(handler, delay=0.5)
+    client = httpx.Client(transport=transport)
+
+    response = client.get("https://example.com")
+
+    assert response.elapsed == timedelta(seconds=1)
+
+
+def test_mocktransport_sets_elapsed_to_delay():
+    def handler(request):
+        return httpx.Response(200)
+
+    transport = httpx.MockTransport(handler, delay=0.5)
+    client = httpx.Client(transport=transport)
+
+    response = client.get("https://example.com")
+
+    assert response.elapsed == timedelta(seconds=0.5)
+
+
+def test_mocktransport_sets_elapsed_none_when_no_delay():
+    def handler(request):
+        return httpx.Response(200)
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.Client(transport=transport)
+
+    response = client.get("https://example.com")
+
+    assert response.elapsed is None
