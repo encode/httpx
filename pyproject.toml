@@ -25,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
@@ -82,7 +83,7 @@ test = [
     "trio==0.31.0",
     "trio-typing==0.10.0",
     "trustme==1.2.1",
-    "uvicorn==0.35.0",
+    "uvicorn==0.38.0",
 ]
 docs = [
     "mkdocs==1.6.1",
