@@ -1,3 +1,5 @@
+import ssl
+
 import httpcore
 import pytest
 
@@ -263,3 +265,9 @@ def test_proxy_with_mounts():
 
     transport = client._transport_for_url(httpx.URL("http://example.com"))
     assert transport == proxy_transport
+
+
+def test_proxy_with_ssl_context():
+    ssl_context = ssl.create_default_context()
+    proxy_transport = httpx.HTTPTransport(proxy="https://127.0.0.1", verify=ssl_context)
+    assert proxy_transport._pool._proxy_ssl_context == ssl_context  # type: ignore[attr-defined]
