@@ -679,7 +679,7 @@ class Client(BaseClient):
             except ImportError:  # pragma: no cover
                 raise ImportError(
                     "Using http2=True, but the 'h2' package is not installed. "
-                    "Make sure to install httpx using `pip install httpx[http2]`."
+                    "Make sure to install httpx using `pip install 'httpx[http2]'`."
                 ) from None
 
         allow_env_proxies = trust_env and transport is None
@@ -1393,7 +1393,7 @@ class AsyncClient(BaseClient):
             except ImportError:  # pragma: no cover
                 raise ImportError(
                     "Using http2=True, but the 'h2' package is not installed. "
-                    "Make sure to install httpx using `pip install httpx[http2]`."
+                    "Make sure to install httpx using `pip install 'httpx[http2]'`."
                 ) from None
 
         allow_env_proxies = trust_env and transport is None
