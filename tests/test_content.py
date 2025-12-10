@@ -489,18 +489,18 @@ def test_response_invalid_argument():
 def test_ensure_ascii_false_with_french_characters():
     data = {"greeting": "Bonjour, ça va ?"}
     response = httpx.Response(200, json=data)
-    assert "ça va" in response.text, (
-        "ensure_ascii=False should preserve French accented characters"
-    )
+    assert (
+        "ça va" in response.text
+    ), "ensure_ascii=False should preserve French accented characters"
     assert response.headers["Content-Type"] == "application/json"
 
 
 def test_separators_for_compact_json():
     data = {"clé": "valeur", "liste": [1, 2, 3]}
     response = httpx.Response(200, json=data)
-    assert response.text == '{"clé":"valeur","liste":[1,2,3]}', (
-        "separators=(',', ':') should produce a compact representation"
-    )
+    assert (
+        response.text == '{"clé":"valeur","liste":[1,2,3]}'
+    ), "separators=(',', ':') should produce a compact representation"
     assert response.headers["Content-Type"] == "application/json"
 
 
