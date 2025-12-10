@@ -1,7 +1,4 @@
 #!/bin/sh -e
 
-echo "==> Installing Python…"
-uv python install
-
 echo "==> Installing Python dependencies…"
 uv sync --all-extras
