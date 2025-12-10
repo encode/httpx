@@ -1,12 +1,11 @@
 #!/bin/sh -e
 
-export PREFIX=""
-if [ -d 'venv' ]; then
-    export PREFIX="venv/bin/"
-fi
 export SOURCE_FILES="httpx tests"
 
 set -x
 
-${PREFIX}ruff check --fix $SOURCE_FILES
-${PREFIX}ruff format $SOURCE_FILES
+echo "==> Running linting checks…"
+uv run ruff check --fix $SOURCE_FILES
+
+echo "==> Formatting source code…"
+uv run ruff format $SOURCE_FILES
