@@ -12,6 +12,8 @@ async def test_read_timeout(server):
             await client.get(server.url.copy_with(path="/slow_response"))
 
 
+# TODO: Fix ResourceWarning in this test for Python>=3.14
+@pytest.mark.filterwarnings("ignore::ResourceWarning")
 @pytest.mark.anyio
 async def test_write_timeout(server):
     timeout = httpx.Timeout(None, write=1e-6)

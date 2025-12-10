@@ -14,14 +14,16 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - uses: "actions/checkout@v4"
-      - uses: "actions/setup-python@v6"
+      - name: Install uv (official Astral action)
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "${{ matrix.python-version }}"
-          allow-prereleases: true
+          version: "0.9.13"
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
       - name: "Install dependencies"
         run: "scripts/install"
       - name: "Run linting checks"

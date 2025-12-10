@@ -25,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
@@ -63,6 +64,40 @@ Changelog = "https://github.com/encode/httpx/blob/master/CHANGELOG.md"
 Documentation = "https://www.python-httpx.org"
 Homepage = "https://github.com/encode/httpx"
 Source = "https://github.com/encode/httpx"
+
+[dependency-groups]
+dev = [
+    # Install httpx with all optional dependencies
+    { include-group = "test" },
+    { include-group = "docs" },
+    { include-group = "package" },
+    { include-group = "lint" },
+]
+test = [
+    # Optional charset auto-detection (used in test cases)
+    "chardet==5.2.0",
+    # Testing dependencies
+    "coverage[toml]==7.10.6",
+    "cryptography==45.0.7",
+    "pytest==8.4.1",
+    "trio==0.31.0",
+    "trio-typing==0.10.0",
+    "trustme==1.2.1",
+    "uvicorn==0.38.0",
+]
+docs = [
+    "mkdocs==1.6.1",
+    "mkautodoc==0.2.0",
+    "mkdocs-material==9.6.18",
+]
+package = [
+    "build==1.3.0",
+    "twine==6.1.0",
+]
+lint = [
+    "mypy==1.17.1",
+    "ruff==0.12.11",
+]
 
 [tool.hatch.version]
 path = "httpx/__version__.py"
