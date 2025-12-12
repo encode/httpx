@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
  
 ## 0.28.0 (28th November, 2024)
 
-Be aware that the default *JSON request bodies now use a more compact representation*. This is generally considered a prefered style, tho may require updates to test suites.
+Be aware that the default *JSON request bodies now use a more compact representation*. This is generally considered a preferred style, tho may require updates to test suites.
 
 The 0.28 release includes a limited set of deprecations...
 
@@ -155,7 +155,7 @@ Our revised [SSL documentation](docs/advanced/ssl.md) covers how to implement th
 
 ### Removed
 
-* The `rfc3986` dependancy has been removed. (#2252)
+* The `rfc3986` dependency has been removed. (#2252)
 
 ## 0.23.3 (4th January, 2023)
 
