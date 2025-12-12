@@ -159,8 +159,8 @@ def test_url_params():
     url = httpx.URL(
         "https://example.org:123/path/to/somewhere?b=456", params={"a": "123"}
     )
-    assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
-    assert url.params == httpx.QueryParams({"a": "123"})
+    assert str(url) == "https://example.org:123/path/to/somewhere?b=456&a=123"
+    assert url.params == httpx.QueryParams({"b": "456", "a": "123"})
 
 
 # Tests for username and password
@@ -465,6 +465,21 @@ def test_url_invalid_type():
 
     with pytest.raises(TypeError):
         httpx.URL(ExternalURLClass())  # type: ignore
+
+
+def test_url_invalid_type_with_params():
+    with pytest.raises(TypeError):
+        httpx.URL(123, params={"a": "b"})  # type: ignore
+
+
+def test_url_with_params_none():
+    # Test with existing query parameters
+    url = httpx.URL("https://example.com?existing=param", params=None)
+    assert "existing=param" in str(url)
+
+    # Test without existing query parameters
+    url = httpx.URL("https://example.com", params=None)
+    assert str(url) == "https://example.com"
 
 
 def test_url_with_invalid_component():
