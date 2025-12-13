@@ -791,20 +791,19 @@ class Response:
             and "Location" in self.headers
         )
 
-    def raise_for_status(self) -> Response:
-        """
-        Raise the `HTTPStatusError` if one occurred.
-        """
-        request = self._request
-        if request is None:
+    def _ensure_request(self, method_name: str) -> Request:
+        """Ensure request is set, raise RuntimeError if not."""
+        if self._request is None:
             raise RuntimeError(
-                "Cannot call `raise_for_status` as the request "
+                f"Cannot call `{method_name}` as the request "
                 "instance has not been set on this response."
             )
+        return self._request
 
-        if self.is_success:
-            return self
-
+    def _raise_status_error(
+        self, request: Request, *, error_type_for_2xx: str | None = None
+    ) -> typing.NoReturn:
+        """Internal helper to raise HTTPStatusError with appropriate message."""
         if self.has_redirect_location:
             message = (
                 "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
@@ -818,15 +817,55 @@ class Response:
             )
 
         status_class = self.status_code // 100
-        error_types = {
+        error_types: dict[int, str] = {
             1: "Informational response",
             3: "Redirect response",
             4: "Client error",
             5: "Server error",
         }
+        if error_type_for_2xx is not None:
+            error_types[2] = error_type_for_2xx
+
         error_type = error_types.get(status_class, "Invalid status code")
         message = message.format(self, error_type=error_type)
         raise HTTPStatusError(message, request=request, response=self)
+
+    def raise_for_status(self) -> Response:
+        """
+        Raise the `HTTPStatusError` if one occurred.
+        """
+        request = self._ensure_request("raise_for_status")
+
+        if self.is_success:
+            return self
+
+        self._raise_status_error(request)
+
+    def raise_for_excepted_status(self, expected: typing.Sequence[int]) -> Response:
+        """
+        Raise the `HTTPStatusError` unless the status code is in the `expected` list.
+
+        Only status codes explicitly listed in `expected` are allowed to pass.
+        All other status codes (including 2xx) will raise an exception.
+
+        Args:
+            expected: A sequence of status codes that are considered acceptable
+                      and should not raise an exception.
+
+        Returns:
+            This response instance if the status code is in the expected list.
+
+        Raises:
+            HTTPStatusError: If the response status code is not in the expected list.
+        """
+        request = self._ensure_request("raise_for_excepted_status")
+
+        if self.status_code in expected:
+            return self
+
+        self._raise_status_error(
+            request, error_type_for_2xx="Unexpected success response"
+        )
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
         return jsonlib.loads(self.content, **kwargs)

@@ -305,6 +305,30 @@ The method returns the response instance, allowing you to use it inline. For exa
 >>> data = httpx.get('...').raise_for_status().json()
 ```
 
+### Allowing Specific Status Codes
+
+Sometimes you may expect certain non-2xx status codes as valid responses (e.g., 404 when checking if a resource exists). Use `raise_for_excepted_status()` to specify which status codes are acceptable:
+
+```pycon
+>>> r = httpx.get('https://httpbin.org/status/404')
+>>> r.raise_for_excepted_status([200, 404])  # 404 is expected, no exception raised
+<Response [404 Not Found]>
+```
+
+Note that `raise_for_excepted_status()` only allows the status codes explicitly listed in the `expected` parameter. Even 2xx success codes must be included:
+
+```pycon
+>>> r = httpx.get('https://httpbin.org/get')
+>>> r.status_code
+200
+>>> r.raise_for_excepted_status([201])  # 200 not in list, raises exception
+Traceback (most recent call last):
+  ...
+httpx._exceptions.HTTPStatusError: ...
+>>> r.raise_for_excepted_status([200, 201])  # 200 is in list, passes
+<Response [200 OK]>
+```
+
 ## Response Headers
 
 The response headers are available as a dictionary-like interface.

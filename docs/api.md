@@ -71,6 +71,7 @@
   [total_seconds()](https://docs.python.org/3/library/datetime.html#datetime.timedelta.total_seconds) to correctly get
   the total elapsed seconds.
 * `def .raise_for_status()` - **Response**
+* `def .raise_for_excepted_status(expected)` - **Response**
 * `def .json()` - **Any**
 * `def .read()` - **bytes**
 * `def .iter_raw([chunk_size])` - **bytes iterator**
