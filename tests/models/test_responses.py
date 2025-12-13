@@ -199,9 +199,9 @@ def test_raise_for_excepted_status():
     # Calling .raise_for_excepted_status without setting a request instance
     # should raise a runtime error.
     response = httpx.Response(200)
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(RuntimeError) as runtime_exc_info:
         response.raise_for_excepted_status([200])
-    assert "raise_for_excepted_status" in str(exc_info.value)
+    assert "raise_for_excepted_status" in str(runtime_exc_info.value)
 
 
 def test_response_repr():
