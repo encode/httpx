@@ -179,28 +179,27 @@ class ZStandardDecoder(ContentDecoder):
             ) from None
 
         self.decompressor = zstd.ZstdDecompressor()
-        self.seen_data = False
+        self.at_valid_eof = True
 
     def decode(self, data: bytes) -> bytes:
         assert zstd is not None
-        self.seen_data = True
         output = io.BytesIO()
         try:
-            output.write(self.decompressor.decompress(data))
-            while self.decompressor.eof and self.decompressor.unused_data:
-                unused_data = self.decompressor.unused_data
-                self.decompressor = zstd.ZstdDecompressor()
-                output.write(self.decompressor.decompress(unused_data))
+            self.at_valid_eof = False
+            while data:
+                output.write(self.decompressor.decompress(data))
+                data = self.decompressor.unused_data
+                if self.decompressor.eof:
+                    self.decompressor = zstd.ZstdDecompressor()
+                    self.at_valid_eof = not data
         except zstd.ZstdError as exc:
             raise DecodingError(str(exc)) from exc
         return output.getvalue()
 
     def flush(self) -> bytes:
-        if not self.seen_data:
+        if self.at_valid_eof:
             return b""
-        if not self.decompressor.eof:
-            raise DecodingError("Zstandard data is incomplete")  # pragma: no cover
-        return b""
+        raise DecodingError("Zstandard data is incomplete")  # pragma: no cover
 
 
 class MultiDecoder(ContentDecoder):
