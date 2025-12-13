@@ -146,6 +146,64 @@ def test_raise_for_status():
         response.raise_for_status()
 
 
+def test_raise_for_excepted_status():
+    request = httpx.Request("GET", "https://example.org")
+
+    # 2xx status code in expected list - should pass
+    response = httpx.Response(200, request=request)
+    assert response.raise_for_excepted_status([200]) is response
+
+    # 2xx status code NOT in expected list - should raise with "Unexpected success"
+    response = httpx.Response(200, request=request)
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_excepted_status([201, 204])
+    assert "Unexpected success response '200 OK'" in str(exc_info.value)
+
+    # 4xx status code in expected list - should pass
+    response = httpx.Response(404, request=request)
+    assert response.raise_for_excepted_status([200, 404]) is response
+
+    # 4xx status code NOT in expected list - should raise
+    response = httpx.Response(404, request=request)
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_excepted_status([200, 400])
+    assert "Client error '404 Not Found'" in str(exc_info.value)
+
+    # 5xx status code in expected list - should pass
+    response = httpx.Response(500, request=request)
+    assert response.raise_for_excepted_status([500, 502, 503]) is response
+
+    # 5xx status code NOT in expected list - should raise
+    response = httpx.Response(500, request=request)
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_excepted_status([200])
+    assert "Server error '500 Internal Server Error'" in str(exc_info.value)
+
+    # 3xx redirect in expected list - should pass
+    headers = {"location": "https://other.org"}
+    response = httpx.Response(301, headers=headers, request=request)
+    assert response.raise_for_excepted_status([301, 302]) is response
+
+    # 3xx redirect NOT in expected list - should raise with redirect location
+    response = httpx.Response(301, headers=headers, request=request)
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_excepted_status([200])
+    assert "Redirect response '301 Moved Permanently'" in str(exc_info.value)
+    assert "Redirect location: 'https://other.org'" in str(exc_info.value)
+
+    # Empty expected list - all status codes should raise
+    response = httpx.Response(200, request=request)
+    with pytest.raises(httpx.HTTPStatusError):
+        response.raise_for_excepted_status([])
+
+    # Calling .raise_for_excepted_status without setting a request instance
+    # should raise a runtime error.
+    response = httpx.Response(200)
+    with pytest.raises(RuntimeError) as exc_info:
+        response.raise_for_excepted_status([200])
+    assert "raise_for_excepted_status" in str(exc_info.value)
+
+
 def test_response_repr():
     response = httpx.Response(
         200,
