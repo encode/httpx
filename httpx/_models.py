@@ -841,9 +841,7 @@ class Response:
 
         self._raise_status_error(request)
 
-    def raise_for_excepted_status(
-        self, expected: typing.Sequence[int]
-    ) -> Response:
+    def raise_for_excepted_status(self, expected: typing.Sequence[int]) -> Response:
         """
         Raise the `HTTPStatusError` unless the status code is in the `expected` list.
 
