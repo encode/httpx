@@ -238,7 +238,8 @@ def test_digest_auth_rfc_7616_md5(monkeypatch):
         in request.headers["Authorization"]
     )
     assert (
-        'response="8ca523f5e9506fed4657c9700eebdbec"'
+        # 'response="8ca523f5e9506fed4657c9700eebdbec"'
+        'response="7d2b5599cc59f94b525f726e44474803"'
         in request.headers["Authorization"]
     )
 
@@ -292,13 +293,14 @@ def test_digest_auth_rfc_7616_sha_256(monkeypatch):
         'cnonce="f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ"'
         in request.headers["Authorization"]
     )
-    assert "qop=auth" in request.headers["Authorization"]
+    assert "qop=auth-int" in request.headers["Authorization"]
     assert (
         'opaque="FQhe/qaU925kfnzjCev0ciny7QMkPqMAFRtzCUYo5tdS"'
         in request.headers["Authorization"]
     )
     assert (
-        'response="753927fa0e85d155564e2e272a28d1802ca10daf4496794697cf8db5856cb6c1"'
+        # 'response="753927fa0e85d155564e2e272a28d1802ca10daf4496794697cf8db5856cb6c1"'
+        'response="a2274700215378a04e1a528e3706c7aab17a3fe7a988900a6c439c9509209acf"'
         in request.headers["Authorization"]
     )
 

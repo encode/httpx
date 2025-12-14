@@ -501,15 +501,50 @@ async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) 
     assert len(response.history) == 1
 
 
+@pytest.mark.parametrize(
+    "algorithm,expected_hash_length,expected_response_length",
+    [
+        ("MD5", 64, 32),
+        ("MD5-SESS", 64, 32),
+        ("SHA", 64, 40),
+        ("SHA-SESS", 64, 40),
+        ("SHA-256", 64, 64),
+        ("SHA-256-SESS", 64, 64),
+        ("SHA-512", 64, 128),
+        ("SHA-512-SESS", 64, 128),
+    ],
+)
 @pytest.mark.anyio
-async def test_digest_auth_qop_auth_int_not_implemented() -> None:
+async def test_digest_auth_qop_auth_int(
+    algorithm: str, expected_hash_length: int, expected_response_length: int
+) -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
-    app = DigestApp(qop="auth-int")
+    app = DigestApp(qop="auth-int", algorithm=algorithm)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        with pytest.raises(NotImplementedError):
-            await client.get(url, auth=auth)
+        response = await client.get(url, auth=auth)
+
+    assert response.status_code == 200
+    assert len(response.history) == 1
+
+    authorization = typing.cast(typing.Dict[str, typing.Any], response.json())["auth"]
+    scheme, _, fields = authorization.partition(" ")
+    assert scheme == "Digest"
+
+    response_fields = [field.strip() for field in fields.split(",")]
+    digest_data = dict(field.split("=") for field in response_fields)
+
+    assert digest_data["username"] == '"user"'
+    assert digest_data["realm"] == '"httpx@example.org"'
+    assert "nonce" in digest_data
+    assert digest_data["uri"] == '"/"'
+    assert len(digest_data["response"]) == expected_response_length + 2  # extra quotes
+    assert len(digest_data["opaque"]) == expected_hash_length + 2
+    assert digest_data["algorithm"] == algorithm
+    assert digest_data["qop"] == "auth-int"
+    assert digest_data["nc"] == "00000001"
+    assert len(digest_data["cnonce"]) == 16 + 2
 
 
 @pytest.mark.anyio
