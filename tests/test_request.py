@@ -1,4 +1,5 @@
 import httpx
+import pytest
 
 
 class ByteIterator:
@@ -77,3 +78,13 @@ def test_request_empty_post():
         "Content-Length": "0",
     }
     assert r.read() == b''
+
+
+def test_request_invalid_scheme():
+    with pytest.raises(ValueError):
+        httpx.Request("GET", "ws://example.com")
+
+
+def test_request_missing_host():
+    with pytest.raises(ValueError):
+        r = httpx.Request("GET", "https:/example.com")
