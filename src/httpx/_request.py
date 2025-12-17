@@ -28,6 +28,11 @@ class Request:
         # A client MUST include a Host header field in all HTTP/1.1 request messages.
         if "Host" not in self.headers:
             self.headers = self.headers.copy_set("Host", self.url.netloc)
+        
+        if self.url.scheme not in ('http', 'https'):
+            raise ValueError(f'Invalid scheme for URL {str(self.url)!r}.')
+        if not self.url.netloc:
+            raise ValueError(f'Missing host for URL {str(self.url)!r}.')
 
         if content is not None:
             if isinstance(content, bytes):
