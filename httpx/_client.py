@@ -6,6 +6,7 @@ import logging
 import time
 import typing
 import warnings
+import weakref
 from contextlib import asynccontextmanager, contextmanager
 from types import TracebackType
 
@@ -146,7 +147,7 @@ class BoundSyncStream(SyncByteStream):
         self, stream: SyncByteStream, response: Response, start: float
     ) -> None:
         self._stream = stream
-        self._response = response
+        self._response = weakref.ref(response)
         self._start = start
 
     def __iter__(self) -> typing.Iterator[bytes]:
@@ -155,7 +156,9 @@ class BoundSyncStream(SyncByteStream):
 
     def close(self) -> None:
         elapsed = time.perf_counter() - self._start
-        self._response.elapsed = datetime.timedelta(seconds=elapsed)
+        response = self._response()
+        if response is not None:
+            response.elapsed = datetime.timedelta(seconds=elapsed)
         self._stream.close()
 
 
@@ -169,7 +172,7 @@ class BoundAsyncStream(AsyncByteStream):
         self, stream: AsyncByteStream, response: Response, start: float
     ) -> None:
         self._stream = stream
-        self._response = response
+        self._response = weakref.ref(response)
         self._start = start
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
@@ -178,7 +181,10 @@ class BoundAsyncStream(AsyncByteStream):
 
     async def aclose(self) -> None:
         elapsed = time.perf_counter() - self._start
-        self._response.elapsed = datetime.timedelta(seconds=elapsed)
+        response = self._response()
+        if response is not None:
+            assert 0
+            response.elapsed = datetime.timedelta(seconds=elapsed)
         await self._stream.aclose()
 
 
