@@ -183,7 +183,6 @@ class BoundAsyncStream(AsyncByteStream):
         elapsed = time.perf_counter() - self._start
         response = self._response()
         if response is not None:
-            assert 0
             response.elapsed = datetime.timedelta(seconds=elapsed)
         await self._stream.aclose()
 
