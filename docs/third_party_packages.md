@@ -60,6 +60,12 @@ WebSocket support for HTTPX.
 
 Provides a [pytest](https://docs.pytest.org/en/latest/) fixture to mock HTTPX within test cases.
 
+### python-proxy-headers
+
+[GitHub](https://github.com/proxymesh/python-proxy-headers)
+
+Provides `HTTPProxyTransport` and `AsyncHTTPProxyTransport` to be able to access proxy response headers.
+
 ### RESPX
 
 [GitHub](https://github.com/lundberg/respx) - [Documentation](https://lundberg.github.io/respx/)
