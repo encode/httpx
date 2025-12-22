@@ -64,7 +64,7 @@ Provides a [pytest](https://docs.pytest.org/en/latest/) fixture to mock HTTPX wi
 
 [GitHub](https://github.com/proxymesh/python-proxy-headers)
 
-Provides `urllib3_proxy_manager.ProxyHeaderManager` that extends `urllib3.ProxyManager` with support for proxy response headers.
+Provides `HTTPProxyTransport` and `AsyncHTTPProxyTransport` to be able to access proxy response headers.
 
 ### RESPX
 
