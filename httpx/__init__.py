@@ -30,6 +30,7 @@ __all__ = [
     "__description__",
     "__title__",
     "__version__",
+    "ASGIStreamingTransport",
     "ASGITransport",
     "AsyncBaseTransport",
     "AsyncByteStream",
