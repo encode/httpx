@@ -67,7 +67,13 @@ def get_environment_proxies() -> dict[str, str | None]:
             elif is_ipv4_hostname(hostname):
                 mounts[f"all://{hostname}"] = None
             elif is_ipv6_hostname(hostname):
-                mounts[f"all://[{hostname}]"] = None
+                if "/" in hostname:
+                    CIDR = hostname.split("/")
+                    hostname = f"{CIDR[0]}"
+                    subnet = f"/{CIDR[1]}"
+                else:
+                    subnet = ""
+                mounts[f"all://[{hostname}]{subnet}"] = None
             elif hostname.lower() == "localhost":
                 mounts[f"all://{hostname}"] = None
             else:

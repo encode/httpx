@@ -100,6 +100,7 @@ def test_logging_redirect_chain(server, caplog):
         ({"no_proxy": "127.0.0.1"}, {"all://127.0.0.1": None}),
         ({"no_proxy": "192.168.0.0/16"}, {"all://192.168.0.0/16": None}),
         ({"no_proxy": "::1"}, {"all://[::1]": None}),
+        ({"no_proxy": "fe11::/16"}, {"all://[fe11::]/16": None}),
         ({"no_proxy": "localhost"}, {"all://localhost": None}),
         ({"no_proxy": "github.com"}, {"all://*github.com": None}),
         ({"no_proxy": ".github.com"}, {"all://*.github.com": None}),
