@@ -19,7 +19,7 @@ class MockSyncStream(SyncByteStream):
     def __init__(self) -> None:
         self.closed = False
 
-    def __iter__(self) -> typing.Iterator[bytes]:
+    def __iter__(self) -> typing.Iterator[bytes]:  # pragma: no cover
         yield b"test"
 
     def close(self) -> None:
@@ -30,7 +30,7 @@ class MockAsyncStream(AsyncByteStream):
     def __init__(self) -> None:
         self.closed = False
 
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:  # pragma: no cover
         yield b"test"
 
     async def aclose(self) -> None:
