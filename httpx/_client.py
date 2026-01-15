@@ -6,6 +6,7 @@ import logging
 import time
 import typing
 import warnings
+import weakref
 from contextlib import asynccontextmanager, contextmanager
 from types import TracebackType
 
@@ -140,13 +141,14 @@ class BoundSyncStream(SyncByteStream):
     """
     A byte stream that is bound to a given response instance, and that
     ensures the `response.elapsed` is set once the response is closed.
+    Uses weakref to avoid reference cycles with the response object.
     """
 
     def __init__(
         self, stream: SyncByteStream, response: Response, start: float
     ) -> None:
         self._stream = stream
-        self._response = response
+        self._response_ref: weakref.ref[Response] = weakref.ref(response)
         self._start = start
 
     def __iter__(self) -> typing.Iterator[bytes]:
@@ -155,7 +157,9 @@ class BoundSyncStream(SyncByteStream):
 
     def close(self) -> None:
         elapsed = time.perf_counter() - self._start
-        self._response.elapsed = datetime.timedelta(seconds=elapsed)
+        response = self._response_ref()
+        if response is not None:
+            response.elapsed = datetime.timedelta(seconds=elapsed)
         self._stream.close()
 
 
@@ -163,13 +167,14 @@ class BoundAsyncStream(AsyncByteStream):
     """
     An async byte stream that is bound to a given response instance, and that
     ensures the `response.elapsed` is set once the response is closed.
+    Uses weakref to avoid reference cycles with the response object.
     """
 
     def __init__(
         self, stream: AsyncByteStream, response: Response, start: float
     ) -> None:
         self._stream = stream
-        self._response = response
+        self._response_ref: weakref.ref[Response] = weakref.ref(response)
         self._start = start
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
@@ -178,7 +183,9 @@ class BoundAsyncStream(AsyncByteStream):
 
     async def aclose(self) -> None:
         elapsed = time.perf_counter() - self._start
-        self._response.elapsed = datetime.timedelta(seconds=elapsed)
+        response = self._response_ref()
+        if response is not None:
+            response.elapsed = datetime.timedelta(seconds=elapsed)
         await self._stream.aclose()
 
 
