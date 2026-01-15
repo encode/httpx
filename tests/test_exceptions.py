@@ -61,3 +61,26 @@ def test_request_attribute() -> None:
     request = httpx.Request("GET", "https://www.example.com")
     exc = httpx.ReadTimeout("Read operation timed out", request=request)
     assert exc.request == request
+
+
+def test_ssl_error_message_enhancement() -> None:
+    """
+    SSL handshake failures should include helpful hints about possible causes.
+    Regression test for: https://github.com/encode/httpx/issues/3713
+    """
+    from httpx._transports.default import map_httpcore_exceptions
+
+    ssl_error_messages = [
+        "[SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1000)",
+        "[SSL: RECORD_LAYER_FAILURE] record layer failure (_ssl.c:1081)",
+    ]
+
+    for original_message in ssl_error_messages:
+        with pytest.raises(httpx.ConnectError) as exc_info:
+            with map_httpcore_exceptions():
+                raise httpcore.ConnectError(original_message)
+
+        enhanced_message = str(exc_info.value)
+        assert original_message in enhanced_message
+        assert "Hint:" in enhanced_message
+        assert "stale connection pool" in enhanced_message

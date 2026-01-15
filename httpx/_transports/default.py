@@ -115,6 +115,8 @@ def map_httpcore_exceptions() -> typing.Iterator[None]:
             raise
 
         message = str(exc)
+        if "WRONG_VERSION_NUMBER" in message or "RECORD_LAYER_FAILURE" in message:
+            message += " (Hint: HTTPS to HTTP server, or stale connection pool)"
         raise mapped_exc(message) from exc
 
 
