@@ -35,6 +35,18 @@ connecting via a Unix Domain Socket that is only available via this low-level AP
 {"ID": "...", "Containers": 4, "Images": 74, ...}
 ```
 
+Another advanced configuration is supplying a custom httpcore [Network Backend](https://www.encode.io/httpcore/network-backends/).
+
+```pycon
+>>> import httpx
+>>> import myk8s
+>>> # This custom network backend enables remote access to ports inside a Kubernetes Cluster using pod port forwarding.
+>>> backend = myk8s.NetworkBackend('cluster.local')
+>>> transport = httpx.HTTPTransport(network_backend=backend)
+>>> client = httpx.Client(transport=transport)
+>>> response = client.get("http://argocd-server.argocd.svc.cluster.local")
+```
+
 ## WSGI Transport
 
 You can configure an `httpx` client to call directly into a Python web application using the WSGI protocol.

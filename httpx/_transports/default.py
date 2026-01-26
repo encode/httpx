@@ -6,6 +6,7 @@ The following additional keyword arguments are currently supported by httpcore..
 * uds: str
 * local_address: str
 * retries: int
+* network_backend: httpcore.NetworkBackend
 
 Example usages...
 
@@ -22,6 +23,13 @@ client = httpx.Client(transport=transport)
 # Using advanced httpcore configuration, with unix domain sockets.
 transport = httpx.HTTPTransport(uds="socket.uds")
 client = httpx.Client(transport=transport)
+
+# Using advanced httpcore configuration, with custom network backend.
+import myk8s
+backend = myk8s.NetworkBackend('cluster.local')
+transport = httpx.HTTPTransport(network_backend=backend)
+client = httpx.Client(transport=transport)
+response = client.get("http://argocd-server.argocd.svc.cluster.local")
 """
 
 from __future__ import annotations
@@ -32,6 +40,8 @@ from types import TracebackType
 
 if typing.TYPE_CHECKING:
     import ssl  # pragma: no cover
+
+    import httpcore  # pragma: no cover
 
     import httpx  # pragma: no cover
 
@@ -146,6 +156,7 @@ class HTTPTransport(BaseTransport):
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
+        network_backend: httpcore.NetworkBackend | None = None,
     ) -> None:
         import httpcore
 
@@ -164,6 +175,7 @@ class HTTPTransport(BaseTransport):
                 local_address=local_address,
                 retries=retries,
                 socket_options=socket_options,
+                network_backend=network_backend,
             )
         elif proxy.url.scheme in ("http", "https"):
             self._pool = httpcore.HTTPProxy(
@@ -183,6 +195,7 @@ class HTTPTransport(BaseTransport):
                 http1=http1,
                 http2=http2,
                 socket_options=socket_options,
+                network_backend=network_backend,
             )
         elif proxy.url.scheme in ("socks5", "socks5h"):
             try:
@@ -207,6 +220,7 @@ class HTTPTransport(BaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                network_backend=network_backend,
             )
         else:  # pragma: no cover
             raise ValueError(
@@ -290,6 +304,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
+        network_backend: httpcore.AsyncNetworkBackend | None = None,
     ) -> None:
         import httpcore
 
@@ -308,6 +323,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 local_address=local_address,
                 retries=retries,
                 socket_options=socket_options,
+                network_backend=network_backend,
             )
         elif proxy.url.scheme in ("http", "https"):
             self._pool = httpcore.AsyncHTTPProxy(
@@ -327,6 +343,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 http1=http1,
                 http2=http2,
                 socket_options=socket_options,
+                network_backend=network_backend,
             )
         elif proxy.url.scheme in ("socks5", "socks5h"):
             try:
@@ -351,6 +368,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                network_backend=network_backend,
             )
         else:  # pragma: no cover
             raise ValueError(
