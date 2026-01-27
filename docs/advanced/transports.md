@@ -38,13 +38,14 @@ connecting via a Unix Domain Socket that is only available via this low-level AP
 Another advanced configuration is supplying a custom httpcore [Network Backend](https://www.encode.io/httpcore/network-backends/).
 
 ```pycon
+>>> import httpcore
 >>> import httpx
->>> import myk8s
->>> # This custom network backend enables remote access to ports inside a Kubernetes Cluster using pod port forwarding.
->>> backend = myk8s.NetworkBackend('cluster.local')
+>>> backend = httpcore.MockBackend([b"HTTP/1.1 200 OK\r\n\r\nHello, World!"])
 >>> transport = httpx.HTTPTransport(network_backend=backend)
 >>> client = httpx.Client(transport=transport)
->>> response = client.get("http://argocd-server.argocd.svc.cluster.local")
+>>> response = client.get("http://network-backend")
+>>> reposne.text
+'Hello, World!'
 ```
 
 ## WSGI Transport

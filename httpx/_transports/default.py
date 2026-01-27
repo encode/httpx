@@ -25,11 +25,12 @@ transport = httpx.HTTPTransport(uds="socket.uds")
 client = httpx.Client(transport=transport)
 
 # Using advanced httpcore configuration, with custom network backend.
-import myk8s
-backend = myk8s.NetworkBackend('cluster.local')
+import httpcore
+backend = backend = httpcore.MockBackend([b"HTTP/1.1 200 OK\r\n\r\nHello, World!"])
 transport = httpx.HTTPTransport(network_backend=backend)
 client = httpx.Client(transport=transport)
-response = client.get("http://argocd-server.argocd.svc.cluster.local")
+response = client.get("http://network-backend")
+content = response.text
 """
 
 from __future__ import annotations
