@@ -59,10 +59,14 @@ class IteratorByteStream(SyncByteStream):
                 yield chunk
                 chunk = self._stream.read(self.CHUNK_SIZE)
         else:
-            # Otherwise iterate.
+            # Otherwise iterate, splitting large chunks.
             for part in self._stream:
-                yield part
-
+                # Split large chunks into CHUNK_SIZE pieces
+                offset = 0
+                while offset < len(part):
+                    chunk_size = min(self.CHUNK_SIZE, len(part) - offset)
+                    yield part[offset : offset + chunk_size]
+                    offset += chunk_size
 
 class AsyncIteratorByteStream(AsyncByteStream):
     CHUNK_SIZE = 65_536
