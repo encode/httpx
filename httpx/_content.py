@@ -68,6 +68,7 @@ class IteratorByteStream(SyncByteStream):
                     yield part[offset : offset + chunk_size]
                     offset += chunk_size
 
+
 class AsyncIteratorByteStream(AsyncByteStream):
     CHUNK_SIZE = 65_536
 
