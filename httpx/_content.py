@@ -206,16 +206,12 @@ def encode_request(
         # Validate that data is bytes-like or an iterable of bytes, not other types
         if isinstance(data, (list, tuple)):
             # Check if it's a list/tuple of bytes
-            try:
-                for item in data:
-                    if not isinstance(item, (bytes, bytearray, memoryview)):
-                        raise TypeError(
-                            f"Expected bytes-like object in 'data' sequence, got {type(item).__name__}. "
-                            f"Use 'json=' for JSON data or 'data={{...}}' for form data."
-                        )
-            except TypeError:
-                # Re-raise our custom error, not the iteration error
-                raise
+            for item in data:
+                if not isinstance(item, (bytes, bytearray, memoryview)):
+                    raise TypeError(
+                        f"Expected bytes-like object in 'data' sequence, got {type(item).__name__}. "
+                        f"Use 'json=' for JSON data or 'data={{...}}' for form data."
+                    )
 
         message = "Use 'content=<...>' to upload raw bytes/text content."
         warnings.warn(message, DeprecationWarning, stacklevel=2)
