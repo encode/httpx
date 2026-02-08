@@ -105,13 +105,36 @@ class URL:
                     kwargs[key] = value.decode("ascii")
 
             if "params" in kwargs:
-                # Replace any "params" keyword with the raw "query" instead.
+                # Merge any "params" keyword with existing query params.
+                #
+                # When a URL already has query parameters and additional params
+                # are provided, we merge them together rather than replacing.
+                # This matches the behavior of the requests library.
                 #
                 # Ensure that empty params use `kwargs["query"] = None` rather
                 # than `kwargs["query"] = ""`, so that generated URLs do not
                 # include an empty trailing "?".
                 params = kwargs.pop("params")
-                kwargs["query"] = None if not params else str(QueryParams(params))
+
+                # Get existing query params from the URL
+                if isinstance(url, str):
+                    parsed_url = urlparse(url)
+                    existing_params = QueryParams(parsed_url.query) if parsed_url.query else QueryParams()
+                elif isinstance(url, URL):
+                    existing_params = url.params
+                else:
+                    existing_params = QueryParams()
+
+                # Merge existing and new params
+                if params:
+                    merged_params = existing_params.merge(params)
+                    kwargs["query"] = str(merged_params) if merged_params else None
+                elif existing_params:
+                    # params is empty but URL has existing params - keep them
+                    kwargs["query"] = str(existing_params)
+                else:
+                    # Both empty - no query string
+                    kwargs["query"] = None
 
         if isinstance(url, str):
             self._uri_reference = urlparse(url, **kwargs)

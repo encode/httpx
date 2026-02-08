@@ -861,3 +861,61 @@ def test_ipv6_url_copy_with_host(url_str, new_host):
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]:1234"
     assert str(url) == "http://[::ffff:192.168.0.1]:1234"
+
+
+def test_url_params_merge_with_existing_query():
+    """
+    Test that when constructing a URL with both existing query params
+    and a params argument, they are merged together.
+
+    Regression test for issue #3621.
+    """
+    # URL with existing query params + additional params argument
+    url = httpx.URL("https://example.com/get?page=post&s=list", params={"pid": 0, "tags": "test"})
+
+    assert url.path == "/get"
+    assert "page=post" in str(url)
+    assert "s=list" in str(url)
+    assert "pid=0" in str(url)
+    assert "tags=test" in str(url)
+
+    # Verify all params are present
+    params = dict(url.params)
+    assert params == {"page": "post", "s": "list", "pid": "0", "tags": "test"}
+
+
+def test_url_params_override_with_same_key():
+    """
+    Test that when a URL has existing query params and new params with
+    the same key are provided, the new params override the old ones.
+    """
+    url = httpx.URL("https://example.com/get?a=old&b=keep", params={"a": "new", "c": "add"})
+
+    params = dict(url.params)
+    assert params["a"] == "new"  # Overridden
+    assert params["b"] == "keep"  # Preserved
+    assert params["c"] == "add"  # Added
+
+
+def test_url_params_empty_dict_preserves_existing():
+    """
+    Test that passing an empty params dict doesn't remove existing URL params.
+    """
+    url = httpx.URL("https://example.com/get?x=5&y=6", params={})
+
+    assert "x=5" in str(url)
+    assert "y=6" in str(url)
+    params = dict(url.params)
+    assert params == {"x": "5", "y": "6"}
+
+
+def test_url_no_existing_params_with_params_arg():
+    """
+    Test that a URL without existing query params works normally with params argument.
+    """
+    url = httpx.URL("https://example.com/get", params={"a": "1", "b": "2"})
+
+    assert "a=1" in str(url)
+    assert "b=2" in str(url)
+    params = dict(url.params)
+    assert params == {"a": "1", "b": "2"}
