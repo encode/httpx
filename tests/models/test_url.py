@@ -871,7 +871,9 @@ def test_url_params_merge_with_existing_query():
     Regression test for issue #3621.
     """
     # URL with existing query params + additional params argument
-    url = httpx.URL("https://example.com/get?page=post&s=list", params={"pid": 0, "tags": "test"})
+    url = httpx.URL(
+        "https://example.com/get?page=post&s=list", params={"pid": 0, "tags": "test"}
+    )
 
     assert url.path == "/get"
     assert "page=post" in str(url)
@@ -889,7 +891,9 @@ def test_url_params_override_with_same_key():
     Test that when a URL has existing query params and new params with
     the same key are provided, the new params override the old ones.
     """
-    url = httpx.URL("https://example.com/get?a=old&b=keep", params={"a": "new", "c": "add"})
+    url = httpx.URL(
+        "https://example.com/get?a=old&b=keep", params={"a": "new", "c": "add"}
+    )
 
     params = dict(url.params)
     assert params["a"] == "new"  # Overridden

@@ -119,7 +119,11 @@ class URL:
                 # Get existing query params from the URL
                 if isinstance(url, str):
                     parsed_url = urlparse(url)
-                    existing_params = QueryParams(parsed_url.query) if parsed_url.query else QueryParams()
+                    existing_params = (
+                        QueryParams(parsed_url.query)
+                        if parsed_url.query
+                        else QueryParams()
+                    )
                 elif isinstance(url, URL):
                     existing_params = url.params
                 else:
