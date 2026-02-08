@@ -159,8 +159,8 @@ def test_url_params():
     url = httpx.URL(
         "https://example.org:123/path/to/somewhere?b=456", params={"a": "123"}
     )
-    assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
-    assert url.params == httpx.QueryParams({"a": "123"})
+    assert str(url) == "https://example.org:123/path/to/somewhere?b=456&a=123"
+    assert url.params == httpx.QueryParams({"b": "456", "a": "123"})
 
 
 # Tests for username and password
