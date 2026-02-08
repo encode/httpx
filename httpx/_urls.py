@@ -129,10 +129,8 @@ class URL:
                             if parsed_url.query
                             else QueryParams()
                         )
-                    elif isinstance(url, URL):
+                    else:  # isinstance(url, URL)
                         existing_params = url.params
-                    else:
-                        existing_params = QueryParams()
 
                     # Merge existing and new params
                     if params:
