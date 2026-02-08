@@ -208,9 +208,11 @@ def encode_request(
             # Check if it's a list/tuple of bytes
             for item in data:
                 if not isinstance(item, (bytes, bytearray, memoryview)):
+                    item_type = type(item).__name__
                     raise TypeError(
-                        f"Expected bytes-like object in 'data' sequence, got {type(item).__name__}. "
-                        f"Use 'json=' for JSON data or 'data={{...}}' for form data."
+                        f"Expected bytes-like object in 'data' sequence, "
+                        f"got {item_type}. Use 'json=' for JSON data or "
+                        f"'data={{...}}' for form data."
                     )
 
         message = "Use 'content=<...>' to upload raw bytes/text content."
