@@ -467,6 +467,7 @@ def test_mock_transport_elapsed():
 
     Regression test for https://github.com/encode/httpx/issues/3712
     """
+
     def handler(request):
         return httpx.Response(200, json={"text": "Hello, world!"})
 
@@ -486,6 +487,7 @@ async def test_async_mock_transport_elapsed():
 
     Regression test for https://github.com/encode/httpx/issues/3712
     """
+
     def handler(request):
         return httpx.Response(200, json={"text": "Hello, world!"})
 
