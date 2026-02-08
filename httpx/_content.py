@@ -202,6 +202,21 @@ def encode_request(
         # However for compat with requests, we *do* still support
         # `data=<bytes...>` usages. We deal with that case here, treating it
         # as if `content=<...>` had been supplied instead.
+
+        # Validate that data is bytes-like or an iterable of bytes, not other types
+        if isinstance(data, (list, tuple)):
+            # Check if it's a list/tuple of bytes
+            try:
+                for item in data:
+                    if not isinstance(item, (bytes, bytearray, memoryview)):
+                        raise TypeError(
+                            f"Expected bytes-like object in 'data' sequence, got {type(item).__name__}. "
+                            f"Use 'json=' for JSON data or 'data={{...}}' for form data."
+                        )
+            except TypeError:
+                # Re-raise our custom error, not the iteration error
+                raise
+
         message = "Use 'content=<...>' to upload raw bytes/text content."
         warnings.warn(message, DeprecationWarning, stacklevel=2)
         return encode_content(data)
