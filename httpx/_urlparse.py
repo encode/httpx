@@ -51,12 +51,15 @@ QUERY_SAFE = "".join(
 )
 
 # The path percent-encode set is the query percent-encode set
-# and U+003F (?), U+0060 (`), U+007B ({), and U+007D (}).
+# and U+003F (?), U+0060 (`), U+007B ({), U+007C (|), and U+007D (}).
+# We include U+007C (|) in the encode set to align with RFC 3986 and
+# Python's stdlib, since | is not a valid pchar and can cause servers
+# to issue redirects or reject requests when left unencoded.
 PATH_SAFE = "".join(
     [
         chr(i)
         for i in range(0x20, 0x7F)
-        if i not in (0x20, 0x22, 0x23, 0x3C, 0x3E) + (0x3F, 0x60, 0x7B, 0x7D)
+        if i not in (0x20, 0x22, 0x23, 0x3C, 0x3E) + (0x3F, 0x60, 0x7B, 0x7C, 0x7D)
     ]
 )
 

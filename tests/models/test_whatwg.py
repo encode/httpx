@@ -27,6 +27,12 @@ def test_urlparse(test_case):
         # Anyone know what's going on here?
         return
 
+    # We percent-encode "|" in paths (unlike WHATWG), to align with RFC 3986
+    # and Python's stdlib. The pipe character is not a valid pchar and some
+    # servers reject or redirect URLs containing an unencoded "|".
+    if "|" in test_case.get("pathname", ""):
+        return
+
     p = urlparse(test_case["href"])
 
     # Test cases include the protocol with the trailing ":"
