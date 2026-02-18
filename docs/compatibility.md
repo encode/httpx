@@ -221,7 +221,7 @@ For both query params (`params=`) and form data (`data=`), `requests` supports s
 
 ## Event Hooks
 
-`requests` allows event hooks to mutate `Request` and `Response` objects. See [examples](https://requests.readthedocs.io/en/master/user/advanced/#event-hooks) given in the documentation for `requests`.
+`requests` allows event hooks to mutate `Request` and `Response` objects. See [examples](https://requests.readthedocs.io/en/latest/user/advanced/#event-hooks) given in the documentation for `requests`.
 
 In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response.
 
