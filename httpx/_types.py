@@ -2,22 +2,21 @@
 Type definitions for type checking purposes.
 """
 
+from collections.abc import (
+    AsyncIterable,
+    AsyncIterator,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+)
 from http.cookiejar import CookieJar
 from typing import (
     IO,
     TYPE_CHECKING,
     Any,
-    AsyncIterable,
-    AsyncIterator,
     Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
     Optional,
-    Sequence,
-    Tuple,
     Union,
 )
 
@@ -35,8 +34,8 @@ URLTypes = Union["URL", str]
 QueryParamTypes = Union[
     "QueryParams",
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
-    List[Tuple[str, PrimitiveData]],
-    Tuple[Tuple[str, PrimitiveData], ...],
+    list[tuple[str, PrimitiveData]],
+    tuple[tuple[str, PrimitiveData], ...],
     str,
     bytes,
 ]
@@ -45,22 +44,22 @@ HeaderTypes = Union[
     "Headers",
     Mapping[str, str],
     Mapping[bytes, bytes],
-    Sequence[Tuple[str, str]],
-    Sequence[Tuple[bytes, bytes]],
+    Sequence[tuple[str, str]],
+    Sequence[tuple[bytes, bytes]],
 ]
 
-CookieTypes = Union["Cookies", CookieJar, Dict[str, str], List[Tuple[str, str]]]
+CookieTypes = Union["Cookies", CookieJar, dict[str, str], list[tuple[str, str]]]
 
 TimeoutTypes = Union[
     Optional[float],
-    Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
+    tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
     "Timeout",
 ]
 ProxyTypes = Union["URL", str, "Proxy"]
-CertTypes = Union[str, Tuple[str, str], Tuple[str, str, str]]
+CertTypes = Union[str, tuple[str, str], tuple[str, str, str]]
 
 AuthTypes = Union[
-    Tuple[Union[str, bytes], Union[str, bytes]],
+    tuple[Union[str, bytes], Union[str, bytes]],
     Callable[["Request"], "Request"],
     "Auth",
 ]
@@ -76,13 +75,13 @@ FileTypes = Union[
     # file (or bytes)
     FileContent,
     # (filename, file (or bytes))
-    Tuple[Optional[str], FileContent],
+    tuple[Optional[str], FileContent],
     # (filename, file (or bytes), content_type)
-    Tuple[Optional[str], FileContent, Optional[str]],
+    tuple[Optional[str], FileContent, Optional[str]],
     # (filename, file (or bytes), content_type, headers)
-    Tuple[Optional[str], FileContent, Optional[str], Mapping[str, str]],
+    tuple[Optional[str], FileContent, Optional[str], Mapping[str, str]],
 ]
-RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
+RequestFiles = Union[Mapping[str, FileTypes], Sequence[tuple[str, FileTypes]]]
 
 RequestExtensions = Mapping[str, Any]
 

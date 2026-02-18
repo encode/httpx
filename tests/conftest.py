@@ -48,12 +48,12 @@ def clean_environ():
     os.environ.update(original_environ)
 
 
-Message = typing.Dict[str, typing.Any]
+Message = dict[str, typing.Any]
 Receive = typing.Callable[[], typing.Awaitable[Message]]
 Send = typing.Callable[
-    [typing.Dict[str, typing.Any]], typing.Coroutine[None, None, None]
+    [dict[str, typing.Any]], typing.Coroutine[None, None, None]
 ]
-Scope = typing.Dict[str, typing.Any]
+Scope = dict[str, typing.Any]
 
 
 async def app(scope: Scope, receive: Receive, send: Send) -> None:

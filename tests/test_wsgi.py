@@ -24,8 +24,7 @@ def application_factory(output: typing.Iterable[bytes]) -> WSGIApplication:
 
         start_response(status, response_headers)
 
-        for item in output:
-            yield item
+        yield from output
 
     return wsgiref.validate.validator(application)
 
