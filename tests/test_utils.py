@@ -6,7 +6,7 @@ import random
 import pytest
 
 import httpx
-from httpx._utils import URLPattern, get_environment_proxies
+from httpx._utils import build_url_pattern, get_environment_proxies
 
 
 @pytest.mark.parametrize(
@@ -128,24 +128,30 @@ def test_get_environment_proxies(environment, proxies):
         ("http://", "https://example.com", False),
         ("all://", "https://example.com:123", True),
         ("", "https://example.com:123", True),
+        ('all://192.168.0.0/24', 'http://192.168.0.1', True),
+        ('all://192.168.0.0/24', 'https://192.168.1.1', False),
+        ('all://[2001:db8:abcd:0012::]/64', 'http://[2001:db8:abcd:12::1]', True),
+        ('all://[2001:db8:abcd:0012::]/64', 'http://[2001:db8:abcd:13::1]:8080', False),
     ],
 )
 def test_url_matches(pattern, url, expected):
-    pattern = URLPattern(pattern)
+    pattern = build_url_pattern(pattern)
     assert pattern.matches(httpx.URL(url)) == expected
 
 
 def test_pattern_priority():
     matchers = [
-        URLPattern("all://"),
-        URLPattern("http://"),
-        URLPattern("http://example.com"),
-        URLPattern("http://example.com:123"),
+        build_url_pattern("all://"),
+        build_url_pattern("http://"),
+        build_url_pattern("http://example.com"),
+        build_url_pattern("http://example.com:123"),
+        build_url_pattern("192.168.0.1/16"),
     ]
     random.shuffle(matchers)
     assert sorted(matchers) == [
-        URLPattern("http://example.com:123"),
-        URLPattern("http://example.com"),
-        URLPattern("http://"),
-        URLPattern("all://"),
+        build_url_pattern("192.168.0.1/16"),
+        build_url_pattern("http://example.com:123"),
+        build_url_pattern("http://example.com"),
+        build_url_pattern("http://"),
+        build_url_pattern("all://"),
     ]

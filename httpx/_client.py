@@ -46,7 +46,7 @@ from ._types import (
     TimeoutTypes,
 )
 from ._urls import URL, QueryParams
-from ._utils import URLPattern, get_environment_proxies
+from ._utils import URLPattern, get_environment_proxies, build_url_pattern
 
 if typing.TYPE_CHECKING:
     import ssl  # pragma: no cover
@@ -695,7 +695,7 @@ class Client(BaseClient):
             transport=transport,
         )
         self._mounts: dict[URLPattern, BaseTransport | None] = {
-            URLPattern(key): None
+            build_url_pattern(key): None
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
@@ -710,7 +710,7 @@ class Client(BaseClient):
         }
         if mounts is not None:
             self._mounts.update(
-                {URLPattern(key): transport for key, transport in mounts.items()}
+                {build_url_pattern(key): transport for key, transport in mounts.items()}
             )
 
         self._mounts = dict(sorted(self._mounts.items()))
@@ -1410,7 +1410,7 @@ class AsyncClient(BaseClient):
         )
 
         self._mounts: dict[URLPattern, AsyncBaseTransport | None] = {
-            URLPattern(key): None
+            build_url_pattern(key): None
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
@@ -1425,7 +1425,7 @@ class AsyncClient(BaseClient):
         }
         if mounts is not None:
             self._mounts.update(
-                {URLPattern(key): transport for key, transport in mounts.items()}
+                {build_url_pattern(key): transport for key, transport in mounts.items()}
             )
         self._mounts = dict(sorted(self._mounts.items()))
 
