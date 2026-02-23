@@ -1,13 +1,7 @@
 #!/bin/sh -e
 
-if [ -d 'venv' ] ; then
-    PREFIX="venv/bin/"
-else
-    PREFIX=""
-fi
-
 set -x
 
-${PREFIX}python -m build
-${PREFIX}twine check dist/*
-${PREFIX}mkdocs build
+uv run python -m build
+uv run twine check dist/*
+uv run mkdocs build
