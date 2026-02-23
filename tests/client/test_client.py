@@ -229,6 +229,17 @@ def test_merge_relative_url_with_encoded_slashes():
     assert request.url == "https://www.example.com/base%2Fpath/testing"
 
 
+def test_merge_url_with_base_url_query_params():
+    # https://github.com/encode/httpx/issues/3614
+    client = httpx.Client(base_url="https://www.example.com/get?data=1")
+
+    request = client.build_request("GET", "")
+    assert str(request.url) == "https://www.example.com/get/?data=1"
+
+    request = client.build_request("GET", "/users")
+    assert str(request.url) == "https://www.example.com/get/users?data=1"
+
+
 def test_context_managed_transport():
     class Transport(httpx.BaseTransport):
         def __init__(self) -> None:
