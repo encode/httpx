@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [UNRELEASED]
 
+### Fixed
+
+* Avoid creating references cycles from `BoundSyncStream` and `BoundAsyncStream` to the response object.  This allows memory to be freed by reference counting, which happens quickly, rather than waiting for the cyclic GC to run.
+
 ### Removed
 
 * Drop support for Python 3.8
