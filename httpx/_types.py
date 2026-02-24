@@ -2,11 +2,13 @@
 Type definitions for type checking purposes.
 """
 
+import inspect
 from http.cookiejar import CookieJar
 from typing import (
     IO,
     TYPE_CHECKING,
     Any,
+    AnyStr,
     AsyncIterable,
     AsyncIterator,
     Callable,
@@ -16,10 +18,13 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Protocol,
     Sequence,
     Tuple,
     Union,
 )
+
+from ._compat import TypeIs
 
 if TYPE_CHECKING:  # pragma: no cover
     from ._auth import Auth  # noqa: F401
@@ -71,7 +76,18 @@ ResponseExtensions = Mapping[str, Any]
 
 RequestData = Mapping[str, Any]
 
-FileContent = Union[IO[bytes], bytes, str]
+
+class AsyncReadableFile(Protocol):
+    async def __aiter__(self) -> AsyncIterator[AnyStr]: ...
+
+    async def read(self, size: int = -1) -> AnyStr: ...
+
+    def fileno(self) -> int: ...
+
+    async def seek(self, offset: int, whence: Optional[int] = ...) -> int: ...
+
+
+FileContent = Union[IO[bytes], bytes, str, AsyncReadableFile]
 FileTypes = Union[
     # file (or bytes)
     FileContent,
@@ -112,3 +128,16 @@ class AsyncByteStream:
 
     async def aclose(self) -> None:
         pass
+
+
+def is_async_readable_file(fp: Any) -> TypeIs[AsyncReadableFile]:
+    return (
+        isinstance(fp, AsyncIterable)
+        and hasattr(fp, "read")
+        and inspect.iscoroutinefunction(fp.read)
+        and hasattr(fp, "fileno")
+        and callable(fp.fileno)
+        and not inspect.iscoroutinefunction(fp.fileno)
+        and hasattr(fp, "seek")
+        and inspect.iscoroutinefunction(fp.seek)
+    )
