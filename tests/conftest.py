@@ -269,11 +269,28 @@ class TestServer(Server):
 
 
 def serve_in_thread(server: TestServer) -> typing.Iterator[TestServer]:
-    thread = threading.Thread(target=server.run)
+    server_exception = None
+    server_caught_exception = threading.Event()
+
+    def _run_server() -> None:
+        nonlocal server_exception
+        try:
+            server.run()
+        except BaseException as exc:  # pragma: nocover
+            # BaseException as we need to catch SystemExit too;
+            # `uvicorn` calls `sys.exit(1)` at failure.
+            server_exception = exc
+            server_caught_exception.set()
+
+    thread = threading.Thread(target=_run_server)
     thread.start()
+
     try:
         while not server.started:
-            time.sleep(1e-3)
+            if server_caught_exception.wait(1e-3):
+                raise RuntimeError(
+                    f"Server failed to start: {server_exception!r}",
+                ) from server_exception
         yield server
     finally:
         server.should_exit = True
