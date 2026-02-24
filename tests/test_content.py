@@ -32,6 +32,10 @@ async def test_bytes_content():
     sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
+    # The async iterator returned by __aiter__ is itself an async iterator.
+    async_iterator = request.stream.__aiter__()
+    assert async_iterator.__aiter__() is async_iterator
+
     assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
