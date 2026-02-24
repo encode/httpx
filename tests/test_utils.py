@@ -128,10 +128,10 @@ def test_get_environment_proxies(environment, proxies):
         ("http://", "https://example.com", False),
         ("all://", "https://example.com:123", True),
         ("", "https://example.com:123", True),
-        ('all://192.168.0.0/24', 'http://192.168.0.1', True),
-        ('all://192.168.0.0/24', 'https://192.168.1.1', False),
-        ('all://[2001:db8:abcd:0012::]/64', 'http://[2001:db8:abcd:12::1]', True),
-        ('all://[2001:db8:abcd:0012::]/64', 'http://[2001:db8:abcd:13::1]:8080', False),
+        ("all://192.168.0.0/24", "http://192.168.0.1", True),
+        ("all://192.168.0.0/24", "https://192.168.1.1", False),
+        ("all://[2001:db8:abcd:0012::]/64", "http://[2001:db8:abcd:12::1]", True),
+        ("all://[2001:db8:abcd:0012::]/64", "http://[2001:db8:abcd:13::1]:8080", False),
     ],
 )
 def test_url_matches(pattern, url, expected):

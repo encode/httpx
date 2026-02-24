@@ -243,15 +243,15 @@ class WildcardURLPattern(Pattern):
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, WildcardURLPattern) and self.pattern == other.pattern
-    
+
 
 class IPNetPattern(Pattern):
     def __init__(self, ip_net: str) -> None:
         try:
-            addr, range = ip_net.split('/', 1)
-            if addr[0] == '[' and addr[-1] == ']':
+            addr, range = ip_net.split("/", 1)
+            if addr[0] == "[" and addr[-1] == "]":
                 addr = addr[1:-1]
-                ip_net = f'{addr}/{range}'
+                ip_net = f"{addr}/{range}"
         except ValueError:
             pass  # not a range
         self.net = ipaddress.ip_network(ip_net)
@@ -261,7 +261,7 @@ class IPNetPattern(Pattern):
             return ipaddress.ip_address(other.host) in self.net
         except ValueError:
             return False
-    
+
     @property
     def priority(self) -> tuple[int, int, int]:
         return -1, 0, 0  # higher priority than URLPatterns
@@ -274,17 +274,17 @@ class IPNetPattern(Pattern):
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, IPNetPattern) and self.net == other.net
-    
+
 
 URLPattern = IPNetPattern | WildcardURLPattern
 
 
 def build_url_pattern(pattern: str) -> URLPattern:
     try:
-        proto, rest = pattern.split('://', 1)
-        if proto == 'all' and '/' in rest:
-                return IPNetPattern(rest)
-    except ValueError: # covers .split() and IPNetPattern
+        proto, rest = pattern.split("://", 1)
+        if proto == "all" and "/" in rest:
+            return IPNetPattern(rest)
+    except ValueError:  # covers .split() and IPNetPattern
         pass
     return WildcardURLPattern(pattern)
 
