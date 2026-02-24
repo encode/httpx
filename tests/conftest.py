@@ -268,16 +268,43 @@ class TestServer(Server):
             await self.startup()
 
 
-def serve_in_thread(server: TestServer) -> typing.Iterator[TestServer]:
-    thread = threading.Thread(target=server.run)
+def serve_in_thread(
+    server: TestServer,
+    *,
+    timeout: float = 10.0,
+) -> typing.Iterator[TestServer]:
+    server_exception = None
+    server_caught_exception = threading.Event()
+
+    def _run_server() -> None:
+        nonlocal server_exception
+        try:
+            server.run()
+        except BaseException as exc:  # pragma: nocover
+            # BaseException as we need to catch SystemExit too;
+            # `uvicorn` calls `sys.exit(1)` at failure.
+            server_exception = exc
+            server_caught_exception.set()
+
+    thread = threading.Thread(target=_run_server)
     thread.start()
+
     try:
-        while not server.started:
+        start_time = time.time()
+        while True:
+            if server.started:
+                break
+            if server_caught_exception.wait(1e-3):  # pragma: nocover
+                raise RuntimeError(
+                    f"Server failed to start: {server_exception!r}",
+                ) from server_exception
+            if time.time() - start_time > timeout:  # pragma: nocover
+                raise TimeoutError("Server did not start in time")
             time.sleep(1e-3)
         yield server
     finally:
         server.should_exit = True
-        thread.join()
+        thread.join(timeout=timeout)
 
 
 @pytest.fixture(scope="session")
