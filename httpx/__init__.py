@@ -1,3 +1,10 @@
+"""
+HTTPX is a fully featured HTTP client for Python.
+
+This module exposes the public HTTPX API, including the Client and AsyncClient
+classes, request functions, transports, exceptions, and related utilities.
+"""
+
 from .__version__ import __description__, __title__, __version__
 from ._api import *
 from ._auth import *
