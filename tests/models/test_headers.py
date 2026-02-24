@@ -214,6 +214,12 @@ def test_parse_header_links(value, expected):
     assert all(link in all_links for link in expected)
 
 
+def test_header_encoding_error_includes_name():
+    # https://github.com/encode/httpx/issues/3400
+    with pytest.raises(UnicodeEncodeError, match="header: 'auth'"):
+        httpx.Headers({"auth": "\u0437\u0434\u0440\u0430\u0432\u0435\u0439"})
+
+
 def test_parse_header_links_no_link():
     all_links = httpx.Response(200).links
     assert all_links == {}
