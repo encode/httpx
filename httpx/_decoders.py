@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import codecs
 import io
+import sys
 import typing
 import zlib
 
@@ -28,9 +29,12 @@ except ImportError:  # pragma: no cover
 
 # Zstandard support is optional
 try:
-    import zstandard
+    if sys.version_info >= (3, 14):
+        from compression import zstd  # pragma: no cover
+    else:
+        from backports import zstd  # pragma: no cover
 except ImportError:  # pragma: no cover
-    zstandard = None  # type: ignore
+    zstd = None  # type: ignore
 
 
 class ContentDecoder:
@@ -162,42 +166,40 @@ class ZStandardDecoder(ContentDecoder):
     """
     Handle 'zstd' RFC 8878 decoding.
 
-    Requires `pip install zstandard`.
+    Requires `pip install backports.zstd` for Python before 3.14.
     Can be installed as a dependency of httpx using `pip install httpx[zstd]`.
     """
 
     # inspired by the ZstdDecoder implementation in urllib3
     def __init__(self) -> None:
-        if zstandard is None:  # pragma: no cover
+        if zstd is None:  # pragma: no cover
             raise ImportError(
                 "Using 'ZStandardDecoder', ..."
                 "Make sure to install httpx using `pip install httpx[zstd]`."
             ) from None
 
-        self.decompressor = zstandard.ZstdDecompressor().decompressobj()
-        self.seen_data = False
+        self.decompressor = zstd.ZstdDecompressor()
+        self.at_valid_eof = True
 
     def decode(self, data: bytes) -> bytes:
-        assert zstandard is not None
-        self.seen_data = True
+        assert zstd is not None
         output = io.BytesIO()
         try:
-            output.write(self.decompressor.decompress(data))
-            while self.decompressor.eof and self.decompressor.unused_data:
-                unused_data = self.decompressor.unused_data
-                self.decompressor = zstandard.ZstdDecompressor().decompressobj()
-                output.write(self.decompressor.decompress(unused_data))
-        except zstandard.ZstdError as exc:
+            self.at_valid_eof = False
+            while data:
+                output.write(self.decompressor.decompress(data))
+                data = self.decompressor.unused_data
+                if self.decompressor.eof:
+                    self.decompressor = zstd.ZstdDecompressor()
+                    self.at_valid_eof = not data
+        except zstd.ZstdError as exc:
             raise DecodingError(str(exc)) from exc
         return output.getvalue()
 
     def flush(self) -> bytes:
-        if not self.seen_data:
+        if self.at_valid_eof:
             return b""
-        ret = self.decompressor.flush()  # note: this is a no-op
-        if not self.decompressor.eof:
-            raise DecodingError("Zstandard data is incomplete")  # pragma: no cover
-        return bytes(ret)
+        raise DecodingError("Zstandard data is incomplete")  # pragma: no cover
 
 
 class MultiDecoder(ContentDecoder):
@@ -389,5 +391,5 @@ SUPPORTED_DECODERS = {
 
 if brotli is None:
     SUPPORTED_DECODERS.pop("br")  # pragma: no cover
-if zstandard is None:
+if zstd is None:
     SUPPORTED_DECODERS.pop("zstd")  # pragma: no cover
