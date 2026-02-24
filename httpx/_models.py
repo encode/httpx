@@ -396,7 +396,7 @@ class Request:
         extensions: RequestExtensions | None = None,
     ) -> None:
         self.method = method.upper()
-        self.url = URL(url) if params is None else URL(url, params=params)
+        self.url = URL(url) if params is None else URL(url).copy_merge_params(params)
         self.headers = Headers(headers)
         self.extensions = {} if extensions is None else dict(extensions)
 

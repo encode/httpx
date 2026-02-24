@@ -232,10 +232,18 @@ def test_request_params():
     request = httpx.Request("GET", "http://example.com", params={})
     assert str(request.url) == "http://example.com"
 
+    # Params are merged with existing URL query parameters, not replaced.
     request = httpx.Request(
         "GET", "http://example.com?c=3", params={"a": "1", "b": "2"}
     )
-    assert str(request.url) == "http://example.com?a=1&b=2"
+    assert str(request.url) == "http://example.com?c=3&a=1&b=2"
 
+    # Empty params preserves existing URL query parameters.
     request = httpx.Request("GET", "http://example.com?a=1", params={})
-    assert str(request.url) == "http://example.com"
+    assert str(request.url) == "http://example.com?a=1"
+
+    # Params with overlapping keys override existing URL query parameters.
+    request = httpx.Request(
+        "GET", "http://example.com?a=1&b=2", params={"b": "3", "c": "4"}
+    )
+    assert str(request.url) == "http://example.com?a=1&b=3&c=4"
