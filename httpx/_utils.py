@@ -237,7 +237,7 @@ class WildcardURLPattern(Pattern):
     def __hash__(self) -> int:
         return hash(self.pattern)
 
-    def __lt__(self, other: URLPattern) -> bool:
+    def __lt__(self, other: Pattern) -> bool:
         return self.priority < other.priority
 
     def __eq__(self, other: typing.Any) -> bool:
@@ -268,17 +268,14 @@ class IPNetPattern(Pattern):
     def __hash__(self) -> int:
         return hash(self.net)
 
-    def __lt__(self, other: URLPattern) -> bool:
+    def __lt__(self, other: Pattern) -> bool:
         return self.priority < other.priority
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, IPNetPattern) and self.net == other.net
 
 
-URLPattern = IPNetPattern | WildcardURLPattern
-
-
-def build_url_pattern(pattern: str) -> URLPattern:
+def build_url_pattern(pattern: str) -> Pattern:
     try:
         proto, rest = pattern.split("://", 1)
         if proto == "all" and "/" in rest:

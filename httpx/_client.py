@@ -46,7 +46,7 @@ from ._types import (
     TimeoutTypes,
 )
 from ._urls import URL, QueryParams
-from ._utils import URLPattern, build_url_pattern, get_environment_proxies
+from ._utils import Pattern, build_url_pattern, get_environment_proxies
 
 if typing.TYPE_CHECKING:
     import ssl  # pragma: no cover
@@ -694,7 +694,7 @@ class Client(BaseClient):
             limits=limits,
             transport=transport,
         )
-        self._mounts: dict[URLPattern, BaseTransport | None] = {
+        self._mounts: dict[Pattern, BaseTransport | None] = {
             build_url_pattern(key): None
             if proxy is None
             else self._init_proxy_transport(
@@ -1409,7 +1409,7 @@ class AsyncClient(BaseClient):
             transport=transport,
         )
 
-        self._mounts: dict[URLPattern, AsyncBaseTransport | None] = {
+        self._mounts: dict[Pattern, AsyncBaseTransport | None] = {
             build_url_pattern(key): None
             if proxy is None
             else self._init_proxy_transport(
