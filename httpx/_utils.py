@@ -256,7 +256,7 @@ class IPNetPattern(Pattern):
             pass  # not a range
         self.net = ipaddress.ip_network(ip_net)
 
-    def matches(self, other: URL):
+    def matches(self, other: URL) -> bool:
         try:
             return ipaddress.ip_address(other.host) in self.net
         except ValueError:
