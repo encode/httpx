@@ -1726,8 +1726,13 @@ class AsyncClient(BaseClient):
                 "Attempted to send a sync request with an AsyncClient instance."
             )
 
-        with request_context(request=request):
-            response = await transport.handle_async_request(request)
+        try:
+            with request_context(request=request):
+                response = await transport.handle_async_request(request)
+        except BaseException:
+            if hasattr(request.stream, "aclose"):
+                await request.stream.aclose()
+            raise
 
         assert isinstance(response.stream, AsyncByteStream)
         response.request = request
