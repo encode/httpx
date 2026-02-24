@@ -4,9 +4,8 @@ import ipaddress
 import os
 import re
 import typing
-from urllib.request import getproxies
-
 from abc import abstractmethod
+from urllib.request import getproxies
 
 from ._types import PrimitiveData
 

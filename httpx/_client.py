@@ -46,7 +46,7 @@ from ._types import (
     TimeoutTypes,
 )
 from ._urls import URL, QueryParams
-from ._utils import URLPattern, get_environment_proxies, build_url_pattern
+from ._utils import URLPattern, build_url_pattern, get_environment_proxies
 
 if typing.TYPE_CHECKING:
     import ssl  # pragma: no cover
