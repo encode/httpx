@@ -127,12 +127,18 @@ def peek_filelike_length(stream: typing.Any) -> int | None:
 class Pattern(typing.Protocol):
     @abstractmethod
     def matches(self, other: URL) -> bool:
-        pass
+        """this method should never be accessed"""
 
     @property
     @abstractmethod
     def priority(self) -> tuple[int, int, int]:
-        pass
+        """this property should never be accessed"""
+
+    def __lt__(self, other: Pattern) -> bool:
+        """this method should never be accessed"""
+
+    def __eq__(self, other: typing.Any) -> bool:
+        """this method should never be accessed"""
 
 
 class WildcardURLPattern(Pattern):

@@ -6,7 +6,12 @@ import random
 import pytest
 
 import httpx
-from httpx._utils import build_url_pattern, get_environment_proxies
+from httpx._utils import (
+    IPNetPattern,
+    WildcardURLPattern,
+    build_url_pattern,
+    get_environment_proxies,
+)
 
 
 @pytest.mark.parametrize(
@@ -139,17 +144,45 @@ def test_url_matches(pattern, url, expected):
     assert pattern.matches(httpx.URL(url)) == expected
 
 
+@pytest.mark.parametrize(
+    ["pattern", "url", "expected"],
+    [
+        ("all://192.168.0.0/24", "http://192.168.0.1", True),
+        ("all://192.168.0.1", "http://192.168.0.1", True),
+        ("all://192.168.0.0/24", "foobar", False),
+    ],
+)
+def test_IPNetPattern(pattern, url, expected):
+    proto, rest = pattern.split("://", 1)
+    pattern = IPNetPattern(rest)
+    assert pattern.matches(httpx.URL(url)) == expected
+
+
+def test_build_url_pattern():
+    pattern1 = build_url_pattern("all://192.168.0.0/16")
+    pattern2 = build_url_pattern("all://192.168.0.0/16")
+    pattern3 = build_url_pattern("all://192.168.0.1")
+    assert isinstance(pattern1, IPNetPattern)
+    assert isinstance(pattern2, IPNetPattern)
+    assert isinstance(pattern3, WildcardURLPattern)
+    assert pattern1 == pattern2
+    assert pattern2 != pattern3
+    assert pattern1 < pattern3
+    assert hash(pattern1) == hash(pattern2)
+    assert hash(pattern2) != hash(pattern3)
+
+
 def test_pattern_priority():
     matchers = [
         build_url_pattern("all://"),
         build_url_pattern("http://"),
         build_url_pattern("http://example.com"),
         build_url_pattern("http://example.com:123"),
-        build_url_pattern("192.168.0.1/16"),
+        build_url_pattern("all://192.168.0.0/16"),
     ]
     random.shuffle(matchers)
     assert sorted(matchers) == [
-        build_url_pattern("192.168.0.1/16"),
+        build_url_pattern("all://192.168.0.0/16"),
         build_url_pattern("http://example.com:123"),
         build_url_pattern("http://example.com"),
         build_url_pattern("http://"),
