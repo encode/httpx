@@ -196,6 +196,7 @@ class BaseClient:
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        keep_method_for_redirects: bool = False,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         trust_env: bool = True,
@@ -212,6 +213,7 @@ class BaseClient:
         self._timeout = Timeout(timeout)
         self.follow_redirects = follow_redirects
         self.max_redirects = max_redirects
+        self.keep_method_for_redirects = keep_method_for_redirects
         self._event_hooks = {
             "request": list(event_hooks.get("request", [])),
             "response": list(event_hooks.get("response", [])),
@@ -502,6 +504,9 @@ class BaseClient:
         if response.status_code == codes.SEE_OTHER and method != "HEAD":
             method = "GET"
 
+        if self.keep_method_for_redirects:
+            return method
+
         # Do what the browsers do, despite standards...
         # Turn 302s into GETs.
         if response.status_code == codes.FOUND and method != "HEAD":
@@ -622,9 +627,13 @@ class Client(BaseClient):
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
+    * **follow_redirects** - *(optional)* Follow redirects and send a new
+    * request to the redirected url automatically.
     * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
+    * **keep_method_for_redirects* - *(optional)* Keep the original HTTP method
+    when following redirects. This is effective only for 301 and 302 .
     * **base_url** - *(optional)* A URL to use as the base when building
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
@@ -654,6 +663,7 @@ class Client(BaseClient):
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        keep_method_for_redirects: bool = False,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         transport: BaseTransport | None = None,
@@ -667,6 +677,7 @@ class Client(BaseClient):
             timeout=timeout,
             follow_redirects=follow_redirects,
             max_redirects=max_redirects,
+            keep_method_for_redirects=keep_method_for_redirects,
             event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
@@ -1336,9 +1347,13 @@ class AsyncClient(BaseClient):
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
+    * **follow_redirects** - *(optional)* Follow redirects and send a new
+    * request to the redirected url automatically.
     * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
+    * **keep_method_for_redirects* - *(optional)* Keep the original HTTP method
+    when following redirects. This is effective only for 301 and 302 .
     * **base_url** - *(optional)* A URL to use as the base when building
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
@@ -1367,6 +1382,7 @@ class AsyncClient(BaseClient):
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        keep_method_for_redirects: bool = False,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         transport: AsyncBaseTransport | None = None,
@@ -1381,6 +1397,7 @@ class AsyncClient(BaseClient):
             timeout=timeout,
             follow_redirects=follow_redirects,
             max_redirects=max_redirects,
+            keep_method_for_redirects=keep_method_for_redirects,
             event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
