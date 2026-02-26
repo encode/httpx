@@ -118,6 +118,18 @@ def test_redirect_301():
     response = client.post("https://example.org/redirect_301", follow_redirects=True)
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
+    assert response.request.method == "GET"
+    assert len(response.history) == 1
+
+
+def test_redirect_301_keep_method():
+    client = httpx.Client(
+        transport=httpx.MockTransport(redirects), keep_method_for_redirects=True
+    )
+    response = client.post("https://example.org/redirect_301", follow_redirects=True)
+    assert response.status_code == httpx.codes.OK
+    assert response.url == "https://example.org/"
+    assert response.request.method == "POST"
     assert len(response.history) == 1
 
 
@@ -126,6 +138,18 @@ def test_redirect_302():
     response = client.post("https://example.org/redirect_302", follow_redirects=True)
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
+    assert response.request.method == "GET"
+    assert len(response.history) == 1
+
+
+def test_redirect_302_keep_method():
+    client = httpx.Client(
+        transport=httpx.MockTransport(redirects), keep_method_for_redirects=True
+    )
+    response = client.post("https://example.org/redirect_302", follow_redirects=True)
+    assert response.status_code == httpx.codes.OK
+    assert response.url == "https://example.org/"
+    assert response.request.method == "POST"
     assert len(response.history) == 1
 
 
@@ -134,6 +158,18 @@ def test_redirect_303():
     response = client.get("https://example.org/redirect_303", follow_redirects=True)
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
+    assert response.request.method == "GET"
+    assert len(response.history) == 1
+
+
+def test_redirect_303_keep_method():
+    client = httpx.Client(
+        transport=httpx.MockTransport(redirects), keep_method_for_redirects=True
+    )
+    response = client.get("https://example.org/redirect_303", follow_redirects=True)
+    assert response.status_code == httpx.codes.OK
+    assert response.url == "https://example.org/"
+    assert response.request.method == "GET"
     assert len(response.history) == 1
 
 
