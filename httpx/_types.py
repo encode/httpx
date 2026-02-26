@@ -2,6 +2,7 @@
 Type definitions for type checking purposes.
 """
 
+from datetime import timedelta
 from http.cookiejar import CookieJar
 from typing import (
     IO,
@@ -52,8 +53,13 @@ HeaderTypes = Union[
 CookieTypes = Union["Cookies", CookieJar, Dict[str, str], List[Tuple[str, str]]]
 
 TimeoutTypes = Union[
-    Optional[float],
-    Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
+    Optional[Union[float, timedelta]],
+    Tuple[
+        Optional[Union[float, timedelta]],
+        Optional[Union[float, timedelta]],
+        Optional[Union[float, timedelta]],
+        Optional[Union[float, timedelta]],
+    ],
     "Timeout",
 ]
 ProxyTypes = Union["URL", str, "Proxy"]
