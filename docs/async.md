@@ -191,4 +191,4 @@ anyio.run(main, backend='trio')
 
 ## Calling into Python Web Apps
 
-For details on calling directly into ASGI applications, see [the `ASGITransport` docs](../advanced/transports#asgitransport).
+For details on calling directly into ASGI applications, see [the `ASGITransport` docs](../advanced/transports#asgi-transport).
