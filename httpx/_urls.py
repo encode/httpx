@@ -170,6 +170,7 @@ class URL:
         """
         The URL host as a string.
         Always normalized to lowercase, with IDNA hosts decoded into unicode.
+        Invalid IDNA encodings are kept in their original xn-- form.
 
         Examples:
 
@@ -182,13 +183,19 @@ class URL:
         url = httpx.URL("http://xn--fiqs8s.icom.museum")
         assert url.host == "中国.icom.museum"
 
+        url = httpx.URL("https://xn--ls8h.la/")
+        assert url.host == "xn--ls8h.la"
+
         url = httpx.URL("https://[::ffff:192.168.0.1]")
         assert url.host == "::ffff:192.168.0.1"
         """
         host: str = self._uri_reference.host
 
         if host.startswith("xn--"):
-            host = idna.decode(host)
+            try:
+                host = idna.decode(host)
+            except idna.IDNAError:
+                pass
 
         return host
 

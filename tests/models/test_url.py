@@ -802,6 +802,12 @@ def test_url_invalid_idna_host():
     assert str(exc.value) == "Invalid IDNA hostname: '☃.com'"
 
 
+def test_url_invalid_idna_encoding_kept():
+    url = httpx.URL("https://xn--ls8h.la/")
+    assert url.host == "xn--ls8h.la"
+    assert url.raw_host == b"xn--ls8h.la"
+
+
 # Tests for IPv4 hostname support.
 
 
