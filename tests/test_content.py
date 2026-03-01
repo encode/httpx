@@ -51,6 +51,30 @@ async def test_bytes_content():
 
 
 @pytest.mark.anyio
+async def test_bytearray_content():
+    request = httpx.Request(method, url, content=b"Hello, world!")
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
+
+    sync_content = b"".join(list(request.stream))
+    async_content = b"".join([part async for part in request.stream])
+
+    assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
+    assert sync_content == b"Hello, world!"
+    assert async_content == b"Hello, world!"
+
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
+
+    sync_content = b"".join(list(request.stream))
+    async_content = b"".join([part async for part in request.stream])
+
+    assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
+    assert sync_content == b"Hello, world!"
+    assert async_content == b"Hello, world!"
+
+
+@pytest.mark.anyio
 async def test_bytesio_content():
     request = httpx.Request(method, url, content=io.BytesIO(b"Hello, world!"))
     assert isinstance(request.stream, typing.Iterable)
