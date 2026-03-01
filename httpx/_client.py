@@ -985,13 +985,18 @@ class Client(BaseClient):
                 if not response.has_redirect_location:
                     return response
 
-                request = self._build_redirect_request(request, response)
+                try:
+                    next_request = self._build_redirect_request(request, response)
+                except (InvalidURL, RemoteProtocolError):
+                    return response
+
                 history = history + [response]
 
                 if follow_redirects:
                     response.read()
+                    request = next_request
                 else:
-                    response.next_request = request
+                    response.next_request = next_request
                     return response
 
             except BaseException as exc:
@@ -1701,13 +1706,18 @@ class AsyncClient(BaseClient):
                 if not response.has_redirect_location:
                     return response
 
-                request = self._build_redirect_request(request, response)
+                try:
+                    next_request = self._build_redirect_request(request, response)
+                except (InvalidURL, RemoteProtocolError):
+                    return response
+
                 history = history + [response]
 
                 if follow_redirects:
                     await response.aread()
+                    request = next_request
                 else:
-                    response.next_request = request
+                    response.next_request = next_request
                     return response
 
             except BaseException as exc:
