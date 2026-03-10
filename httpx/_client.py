@@ -232,9 +232,19 @@ class BaseClient:
         return self._trust_env
 
     def _enforce_trailing_slash(self, url: URL) -> URL:
-        if url.raw_path.endswith(b"/"):
-            return url
-        return url.copy_with(raw_path=url.raw_path + b"/")
+        # Split raw_path into path and query to avoid corrupting query parameters
+        raw_path = url.raw_path
+        if b"?" in raw_path:
+            # URL has query parameters - only check/add slash to path portion
+            path, query = raw_path.split(b"?", 1)
+            if path.endswith(b"/"):
+                return url
+            return url.copy_with(raw_path=path + b"/?" + query)
+        else:
+            # No query parameters - check/add slash to entire raw_path
+            if raw_path.endswith(b"/"):
+                return url
+            return url.copy_with(raw_path=raw_path + b"/")
 
     def _get_proxy_map(
         self, proxy: ProxyTypes | None, allow_env_proxies: bool
