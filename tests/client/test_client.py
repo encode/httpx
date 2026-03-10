@@ -460,3 +460,42 @@ def test_client_decode_text_using_explicit_encoding():
         assert response.reason_phrase == "OK"
         assert response.encoding == "ISO-8859-1"
         assert response.text == text
+
+
+def test_mock_transport_elapsed():
+    """Test that MockTransport sets the elapsed property.
+
+    Regression test for https://github.com/encode/httpx/issues/3712
+    """
+
+    def handler(request):
+        return httpx.Response(200, json={"text": "Hello, world!"})
+
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport) as client:
+        response = client.get("http://www.example.com")
+        assert response.status_code == 200
+        # MockTransport should set elapsed to timedelta(0)
+        assert response.elapsed == timedelta(0)
+        # Accessing elapsed should not raise RuntimeError
+        assert isinstance(response.elapsed, timedelta)
+
+
+@pytest.mark.anyio
+async def test_async_mock_transport_elapsed():
+    """Test that MockTransport sets the elapsed property for async requests.
+
+    Regression test for https://github.com/encode/httpx/issues/3712
+    """
+
+    def handler(request):
+        return httpx.Response(200, json={"text": "Hello, world!"})
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        response = await client.get("http://www.example.com")
+        assert response.status_code == 200
+        # MockTransport should set elapsed to timedelta(0)
+        assert response.elapsed == timedelta(0)
+        # Accessing elapsed should not raise RuntimeError
+        assert isinstance(response.elapsed, timedelta)
