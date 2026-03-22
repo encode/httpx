@@ -226,3 +226,7 @@ For both query params (`params=`) and form data (`data=`), `requests` supports s
 In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response.
 
 If you are looking for more control, consider checking out [Custom Transports](advanced/transports.md#custom-transports).
+
+## Exceptions and Errors
+
+`requests` exception hierarchy is slightly different to the `httpx` exception hierarchy. `requests` exposes a top level `RequestException`, where as `httpx` exposes a top level `HTTPError`. see the exceptions exposes in requests [here](https://requests.readthedocs.io/en/latest/_modules/requests/exceptions/). See the `httpx` error hierarchy [here](https://www.python-httpx.org/exceptions/).

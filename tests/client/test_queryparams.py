@@ -17,7 +17,7 @@ def test_client_queryparams_string():
     assert client.params["a"] == "b"
 
     client = httpx.Client()
-    client.params = "a=b"  # type: ignore
+    client.params = "a=b"
     assert isinstance(client.params, httpx.QueryParams)
     assert client.params["a"] == "b"
 

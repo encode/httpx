@@ -379,7 +379,7 @@ class URL:
 
         if ":" in userinfo:
             # Mask any password component.
-            userinfo = f'{userinfo.split(":")[0]}:[secure]'
+            userinfo = f"{userinfo.split(':')[0]}:[secure]"
 
         authority = "".join(
             [

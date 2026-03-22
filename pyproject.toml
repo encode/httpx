@@ -43,7 +43,7 @@ brotli = [
 cli = [
     "click==8.*",
     "pygments==2.*",
-    "rich>=10,<14",
+    "rich>=10,<15",
 ]
 http2 = [
     "h2>=3,<5",

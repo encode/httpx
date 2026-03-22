@@ -326,7 +326,7 @@ async def test_auth_property() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         assert client.auth is None
 
-        client.auth = ("user", "password123")  # type: ignore
+        client.auth = ("user", "password123")
         assert isinstance(client.auth, httpx.BasicAuth)
 
         url = "https://example.org/"

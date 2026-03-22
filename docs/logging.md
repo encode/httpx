@@ -20,8 +20,6 @@ httpx.get("https://www.example.com")
 Will send debug level output to the console, or wherever `stdout` is directed too...
 
 ```
-DEBUG [2024-09-28 17:27:40] httpx - load_ssl_context verify=True cert=None
-DEBUG [2024-09-28 17:27:40] httpx - load_verify_locations cafile='/Users/karenpetrosyan/oss/karhttpx/.venv/lib/python3.9/site-packages/certifi/cacert.pem'
 DEBUG [2024-09-28 17:27:40] httpcore.connection - connect_tcp.started host='www.example.com' port=443 local_address=None timeout=5.0 socket_options=None
 DEBUG [2024-09-28 17:27:41] httpcore.connection - connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x101f1e8e0>
 DEBUG [2024-09-28 17:27:41] httpcore.connection - start_tls.started ssl_context=SSLContext(verify=True) server_hostname='www.example.com' timeout=5.0

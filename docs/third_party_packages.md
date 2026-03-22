@@ -24,6 +24,12 @@ Provides authentication classes to be used with HTTPX's [authentication paramete
 
 This package adds caching functionality to HTTPX
 
+### httpx-secure
+
+[GitHub](https://github.com/Zaczero/httpx-secure)
+
+Drop-in SSRF protection for httpx with DNS caching and custom validation support.
+
 ### httpx-socks
 
 [GitHub](https://github.com/romis2012/httpx-socks)
