@@ -805,17 +805,11 @@ class Response:
         if self.is_success:
             return self
 
+        message = "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'"
         if self.has_redirect_location:
-            message = (
-                "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
-                "Redirect location: '{0.headers[location]}'\n"
-                "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
-            )
-        else:
-            message = (
-                "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
-                "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
-            )
+            message += "\nRedirect location: '{0.headers[location]}'"
+        if self.reason_phrase:
+            message += "\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
 
         status_class = self.status_code // 100
         error_types = {
