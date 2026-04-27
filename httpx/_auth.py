@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from hashlib import _Hash
 
 
-__all__ = ["Auth", "BasicAuth", "DigestAuth", "NetRCAuth"]
+__all__ = ["Auth", "BasicAuth", "DigestAuth", "FunctionAuth", "NetRCAuth"]
 
 
 class Auth:
