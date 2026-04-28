@@ -36,19 +36,20 @@ python -c "import httpx; httpx.get('http://example.com', trust_env=False)"
 
 ### `NO_PROXY`
 
-Valid values: a comma-separated list of hostnames/urls
+Valid values: a comma-separated list of hostnames/urls/ip ranges
 
 `NO_PROXY` disables the proxy for specific urls
 
 ```bash
 export HTTP_PROXY=http://my-external-proxy.com:1234
-export NO_PROXY=http://127.0.0.1,python-httpx.org
+export NO_PROXY=http://127.0.0.0/8,python-httpx.org,::1
 
 # As in the previous example, this request will be sent through the proxy
 python -c "import httpx; httpx.get('http://example.com')"
 
 # These requests will be sent directly, bypassing the proxy
-python -c "import httpx; httpx.get('http://127.0.0.1:5000/my-api')"
+python -c "import httpx; httpx.get('http://127.0.0.10:5000/my-api')"
+python -c "import httpx; httpx.get('http://[::1]:5000/my-api')"
 python -c "import httpx; httpx.get('https://www.python-httpx.org')"
 ```
 

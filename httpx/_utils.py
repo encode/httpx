@@ -4,6 +4,7 @@ import ipaddress
 import os
 import re
 import typing
+from abc import abstractmethod
 from urllib.request import getproxies
 
 from ._types import PrimitiveData
@@ -67,7 +68,13 @@ def get_environment_proxies() -> dict[str, str | None]:
             elif is_ipv4_hostname(hostname):
                 mounts[f"all://{hostname}"] = None
             elif is_ipv6_hostname(hostname):
-                mounts[f"all://[{hostname}]"] = None
+                if "/" in hostname:
+                    CIDR = hostname.split("/")
+                    hostname = f"{CIDR[0]}"
+                    subnet = f"/{CIDR[1]}"
+                else:
+                    subnet = ""
+                mounts[f"all://[{hostname}]{subnet}"] = None
             elif hostname.lower() == "localhost":
                 mounts[f"all://{hostname}"] = None
             else:
@@ -117,24 +124,41 @@ def peek_filelike_length(stream: typing.Any) -> int | None:
     return length
 
 
-class URLPattern:
+class Pattern(typing.Protocol):
+    @abstractmethod
+    def matches(self, other: URL) -> bool:
+        """this method should never be accessed"""
+
+    @property
+    @abstractmethod
+    def priority(self) -> tuple[int, int, int]:
+        """this property should never be accessed"""
+
+    def __lt__(self, other: Pattern) -> bool:
+        """this method should never be accessed"""
+
+    def __eq__(self, other: typing.Any) -> bool:
+        """this method should never be accessed"""
+
+
+class WildcardURLPattern(Pattern):
     """
     A utility class currently used for making lookups against proxy keys...
 
     # Wildcard matching...
-    >>> pattern = URLPattern("all://")
+    >>> pattern = WildcardURLPattern("all://")
     >>> pattern.matches(httpx.URL("http://example.com"))
     True
 
     # Witch scheme matching...
-    >>> pattern = URLPattern("https://")
+    >>> pattern = WildcardURLPattern("https://")
     >>> pattern.matches(httpx.URL("https://example.com"))
     True
     >>> pattern.matches(httpx.URL("http://example.com"))
     False
 
     # With domain matching...
-    >>> pattern = URLPattern("https://example.com")
+    >>> pattern = WildcardURLPattern("https://example.com")
     >>> pattern.matches(httpx.URL("https://example.com"))
     True
     >>> pattern.matches(httpx.URL("http://example.com"))
@@ -143,7 +167,7 @@ class URLPattern:
     False
 
     # Wildcard scheme, with domain matching...
-    >>> pattern = URLPattern("all://example.com")
+    >>> pattern = WildcardURLPattern("all://example.com")
     >>> pattern.matches(httpx.URL("https://example.com"))
     True
     >>> pattern.matches(httpx.URL("http://example.com"))
@@ -152,7 +176,7 @@ class URLPattern:
     False
 
     # With port matching...
-    >>> pattern = URLPattern("https://example.com:1234")
+    >>> pattern = WildcardURLPattern("https://example.com:1234")
     >>> pattern.matches(httpx.URL("https://example.com:1234"))
     True
     >>> pattern.matches(httpx.URL("https://example.com"))
@@ -219,11 +243,52 @@ class URLPattern:
     def __hash__(self) -> int:
         return hash(self.pattern)
 
-    def __lt__(self, other: URLPattern) -> bool:
+    def __lt__(self, other: Pattern) -> bool:
         return self.priority < other.priority
 
     def __eq__(self, other: typing.Any) -> bool:
-        return isinstance(other, URLPattern) and self.pattern == other.pattern
+        return isinstance(other, WildcardURLPattern) and self.pattern == other.pattern
+
+
+class IPNetPattern(Pattern):
+    def __init__(self, ip_net: str) -> None:
+        try:
+            addr, range = ip_net.split("/", 1)
+            if addr[0] == "[" and addr[-1] == "]":
+                addr = addr[1:-1]
+                ip_net = f"{addr}/{range}"
+        except ValueError:
+            pass  # not a range
+        self.net = ipaddress.ip_network(ip_net)
+
+    def matches(self, other: URL) -> bool:
+        try:
+            return ipaddress.ip_address(other.host) in self.net
+        except ValueError:
+            return False
+
+    @property
+    def priority(self) -> tuple[int, int, int]:
+        return -1, 0, 0  # higher priority than URLPatterns
+
+    def __hash__(self) -> int:
+        return hash(self.net)
+
+    def __lt__(self, other: Pattern) -> bool:
+        return self.priority < other.priority
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return isinstance(other, IPNetPattern) and self.net == other.net
+
+
+def build_url_pattern(pattern: str) -> Pattern:
+    try:
+        proto, rest = pattern.split("://", 1)
+        if proto == "all" and "/" in rest:
+            return IPNetPattern(rest)
+    except ValueError:  # covers .split() and IPNetPattern
+        pass
+    return WildcardURLPattern(pattern)
 
 
 def is_ipv4_hostname(hostname: str) -> bool:
