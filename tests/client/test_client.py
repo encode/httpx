@@ -40,8 +40,25 @@ def test_get(server):
 )
 def test_get_invalid_url(server, url):
     with httpx.Client() as client:
-        with pytest.raises((httpx.UnsupportedProtocol, httpx.LocalProtocolError)):
+        with pytest.raises(
+            (httpx.UnsupportedProtocol, httpx.LocalProtocolError, httpx.InvalidURL)
+        ):
             client.get(url)
+
+
+def test_get_invalid_url_with_scheme_no_host():
+    """
+    Regression test for: https://github.com/encode/httpx/issues/1832
+    URLs with scheme but no host should raise InvalidURL.
+    """
+    with httpx.Client() as client:
+        with pytest.raises(httpx.InvalidURL) as exc:
+            client.get("https:/google.com")
+        assert "has scheme but missing host" in str(exc.value)
+
+        with pytest.raises(httpx.InvalidURL) as exc:
+            client.get("https:///google.com")
+        assert "has scheme but missing host" in str(exc.value)
 
 
 def test_build_request(server):

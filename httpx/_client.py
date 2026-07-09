@@ -394,6 +394,8 @@ class BaseClient:
         to create the URL used for the outgoing request.
         """
         merge_url = URL(url)
+        if merge_url.scheme and not merge_url.host:
+            raise InvalidURL(f"Invalid URL '{url}': has scheme but missing host")
         if merge_url.is_relative_url:
             # To merge URLs we always append to the base URL. To get this
             # behaviour correct we always ensure the base URL ends in a '/'
