@@ -1,41 +1,30 @@
 # Contributing
 
-Thank you for being interested in contributing to HTTPX.
-There are many ways you can contribute to the project:
+## Update for 2026
 
-- Try HTTPX and [report bugs/issues you find](https://github.com/encode/httpx/issues/new)
-- [Implement new features](https://github.com/encode/httpx/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-- [Review Pull Requests of others](https://github.com/encode/httpx/pulls)
-- Write documentation
-- Participate in discussions
+Thank you for your interest in contributing to HTTPX. We’re focusing our development efforts on [hip](https://github.com/encode/hip), the next version of HTTPX. Its API and architecture are being designed to address fundamental security issues.
 
-## Reporting Bugs or Other Issues
+HTTPX is entering a period of low-level maintenance, and we have limited time for triage and support. We may only be able to consider the most serious bug reports. We’re not planning further feature development for HTTPX, but contributions to hip are welcome.
 
-Found something that HTTPX should support?
-Stumbled upon some unexpected behaviour?
+----
 
-Contributions should generally start out with [a discussion](https://github.com/encode/httpx/discussions).
-Possible bugs may be raised as a "Potential Issue" discussion, feature requests may
-be raised as an "Ideas" discussion. We can then determine if the discussion needs
-to be escalated into an "Issue" or not, or if we'd consider a pull request.
+## Reporting Bugs
 
-Try to be more descriptive as you can and in case of a bug report,
-provide as much information as possible like:
+Found an issue that affects HTTPX? Please start with [a discussion](https://github.com/encode/httpx/discussions). We have limited time for triage, so we may only be able to consider the most serious bug reports. For feature requests or other contributions, please see [hip](https://github.com/encode/hip).
+
+When reporting a bug, include as much detail as you can:
 
 - OS platform
 - Python version
 - Installed dependencies and versions (`python -m pip freeze`)
-- Code snippet
-- Error traceback
+- A code snippet
+- The error traceback
 
-You should always try to reduce any examples to the *simplest possible case*
-that demonstrates the issue.
+Please reduce examples to the simplest case that demonstrates the issue. It can also help to check:
 
-Some possibly useful tips for narrowing down potential issues...
-
-- Does the issue exist on HTTP/1.1, or HTTP/2, or both?
-- Does the issue exist with `Client`, `AsyncClient`, or both?
-- When using `AsyncClient` does the issue exist when using `asyncio` or `trio`, or both?
+- Does the issue occur with HTTP/1.1, HTTP/2, or both?
+- Does it occur with `Client`, `AsyncClient`, or both?
+- With `AsyncClient`, does it occur with `asyncio`, `trio`, or both?
 
 ## Development
 
