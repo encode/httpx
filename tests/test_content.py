@@ -364,6 +364,27 @@ def test_invalid_argument():
         httpx.Request(method, url, content={"a": "b"})  # type: ignore
 
 
+def test_invalid_data_list_of_dicts():
+    """Test that passing a list of dicts to data= produces a clear error message.
+
+    This was previously raising a confusing 'Attempted to send a sync request
+    with an AsyncClient instance' error with AsyncClient. Now it should give
+    a clear error for both sync and async clients.
+    """
+    with pytest.raises(TypeError, match="Expected bytes-like object.*got dict"):
+        httpx.Request(method, url, data=[{"a": "b"}])  # type: ignore
+
+
+@pytest.mark.anyio
+async def test_invalid_data_list_of_dicts_async():
+    """Test that AsyncClient produces clear error for invalid data parameter.
+
+    Regression test for issue #3471.
+    """
+    with pytest.raises(TypeError, match="Expected bytes-like object.*got dict"):
+        httpx.Request(method, url, data=[{"a": "b"}])  # type: ignore
+
+
 @pytest.mark.anyio
 async def test_multipart_multiple_files_single_input_content():
     files = [
