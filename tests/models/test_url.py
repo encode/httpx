@@ -861,3 +861,24 @@ def test_ipv6_url_copy_with_host(url_str, new_host):
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]:1234"
     assert str(url) == "http://[::ffff:192.168.0.1]:1234"
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [
+        ("/x/.", "/x/"),
+        ("/x/y/..", "/x/"),
+        ("/x/y/.", "/x/y/"),
+        ("/.", "/"),
+        ("/..", "/"),
+        ("/x/y/../..", "/"),
+        ("/x/y/../", "/x/"),
+        ("/x/.file", "/x/.file"),
+    ],
+)
+def test_terminal_dot_segments_preserve_directory_slash(path, expected):
+    url = httpx.URL("https://example.com" + path)
+    assert url.path == expected
+    assert url.raw_path == expected.encode()
+    if path.endswith(("/.", "/..")):
+        assert str(url.join("child")) == "https://example.com" + expected + "child"
