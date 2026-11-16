@@ -460,3 +460,36 @@ def test_client_decode_text_using_explicit_encoding():
         assert response.reason_phrase == "OK"
         assert response.encoding == "ISO-8859-1"
         assert response.text == text
+
+
+def test_base_url_with_query_params():
+    """
+    Test that base_url with query parameters doesn't corrupt the query values.
+
+    Regression test for issue #3614.
+    """
+    client = httpx.Client(base_url="https://example.com/api?data=1")
+
+    # Query parameter should not be corrupted with trailing slash
+    assert client.base_url.query == b"data=1"
+    assert str(client.base_url) == "https://example.com/api/?data=1"
+
+
+def test_base_url_with_trailing_slash_and_query():
+    """
+    Test that base_url with existing trailing slash and query params works correctly.
+    """
+    client = httpx.Client(base_url="https://example.com/api/?key=value")
+
+    assert client.base_url.query == b"key=value"
+    assert str(client.base_url) == "https://example.com/api/?key=value"
+
+
+def test_base_url_with_multiple_query_params():
+    """
+    Test that base_url with multiple query parameters works correctly.
+    """
+    client = httpx.Client(base_url="https://example.com/api?a=1&b=2&c=3")
+
+    assert client.base_url.query == b"a=1&b=2&c=3"
+    assert str(client.base_url) == "https://example.com/api/?a=1&b=2&c=3"
