@@ -472,6 +472,9 @@ def normalize_path(path: str) -> str:
                 output.pop()
         else:
             output.append(component)
+    # RFC 3986 preserves a directory-ending slash for terminal dot segments.
+    if path.endswith(("/.", "/..")):
+        output.append("")
     return "/".join(output)
 
 
