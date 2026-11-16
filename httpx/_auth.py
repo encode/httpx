@@ -264,7 +264,8 @@ class DigestAuth(Auth):
 
         path = request.url.raw_path
         A2 = b":".join((request.method.encode(), path))
-        # TODO: implement auth-int
+        if challenge.qop == b"auth-int":
+            A2 += b":" + digest(request.content)
         HA2 = digest(A2)
 
         nc_value = b"%08x" % self._nonce_count
@@ -294,7 +295,7 @@ class DigestAuth(Auth):
         if challenge.opaque:
             format_args["opaque"] = challenge.opaque
         if qop:
-            format_args["qop"] = b"auth"
+            format_args["qop"] = qop
             format_args["nc"] = nc_value
             format_args["cnonce"] = cnonce
 
@@ -330,11 +331,12 @@ class DigestAuth(Auth):
         if qop is None:
             return None
         qops = re.split(b", ?", qop)
+
+        # Defer to the strongest supplied qop (auth-int > auth)
+        if b"auth-int" in qops:
+            return b"auth-int"
         if b"auth" in qops:
             return b"auth"
-
-        if qops == [b"auth-int"]:
-            raise NotImplementedError("Digest auth-int support is not yet implemented")
 
         message = f'Unexpected qop value "{qop!r}" in digest auth'
         raise ProtocolError(message, request=request)
