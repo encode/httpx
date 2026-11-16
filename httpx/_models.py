@@ -260,7 +260,7 @@ class Headers(typing.MutableMapping[str, str]):
         values = [
             item_value.decode(self.encoding)
             for _, item_key, item_value in self._list
-            if item_key.lower() == get_header_key
+            if item_key == get_header_key
         ]
 
         if not split_commas:
@@ -334,7 +334,7 @@ class Headers(typing.MutableMapping[str, str]):
         pop_indexes = [
             idx
             for idx, (_, item_key, _) in enumerate(self._list)
-            if item_key.lower() == del_key
+            if item_key == del_key
         ]
 
         if not pop_indexes:
