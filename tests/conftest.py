@@ -269,15 +269,28 @@ class TestServer(Server):
 
 
 def serve_in_thread(server: TestServer) -> typing.Iterator[TestServer]:
-    thread = threading.Thread(target=server.run)
+    thread = threading.Thread(target=server.run, daemon=True)
+    startup_deadline = time.monotonic() + 10
     thread.start()
     try:
         while not server.started:
+            if not thread.is_alive():
+                raise RuntimeError(  # pragma: no cover
+                    "Uvicorn test server exited before startup."
+                )
+            if time.monotonic() > startup_deadline:
+                raise TimeoutError(  # pragma: no cover
+                    "Uvicorn test server did not start within 10 seconds."
+                )
             time.sleep(1e-3)
         yield server
     finally:
         server.should_exit = True
-        thread.join()
+        thread.join(timeout=5)
+        if thread.is_alive():
+            raise TimeoutError(  # pragma: no cover
+                "Uvicorn test server did not stop within 5 seconds."
+            )
 
 
 @pytest.fixture(scope="session")
