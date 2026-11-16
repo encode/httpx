@@ -192,7 +192,7 @@ def test_digest_auth_rfc_7616_md5(monkeypatch):
     # Example from https://datatracker.ietf.org/doc/html/rfc7616#section-3.9.1
 
     def mock_get_client_nonce(nonce_count: int, nonce: bytes) -> bytes:
-        return "f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ".encode()
+        return b"f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ"
 
     auth = httpx.DigestAuth(username="Mufasa", password="Circle of Life")
     monkeypatch.setattr(auth, "_get_client_nonce", mock_get_client_nonce)
@@ -252,7 +252,7 @@ def test_digest_auth_rfc_7616_sha_256(monkeypatch):
     # Example from https://datatracker.ietf.org/doc/html/rfc7616#section-3.9.1
 
     def mock_get_client_nonce(nonce_count: int, nonce: bytes) -> bytes:
-        return "f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ".encode()
+        return b"f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ"
 
     auth = httpx.DigestAuth(username="Mufasa", password="Circle of Life")
     monkeypatch.setattr(auth, "_get_client_nonce", mock_get_client_nonce)
