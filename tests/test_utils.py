@@ -6,7 +6,12 @@ import random
 import pytest
 
 import httpx
-from httpx._utils import URLPattern, get_environment_proxies
+from httpx._utils import (
+    IPNetPattern,
+    WildcardURLPattern,
+    build_url_pattern,
+    get_environment_proxies,
+)
 
 
 @pytest.mark.parametrize(
@@ -100,6 +105,7 @@ def test_logging_redirect_chain(server, caplog):
         ({"no_proxy": "127.0.0.1"}, {"all://127.0.0.1": None}),
         ({"no_proxy": "192.168.0.0/16"}, {"all://192.168.0.0/16": None}),
         ({"no_proxy": "::1"}, {"all://[::1]": None}),
+        ({"no_proxy": "fe11::/16"}, {"all://[fe11::]/16": None}),
         ({"no_proxy": "localhost"}, {"all://localhost": None}),
         ({"no_proxy": "github.com"}, {"all://*github.com": None}),
         ({"no_proxy": ".github.com"}, {"all://*.github.com": None}),
@@ -127,24 +133,58 @@ def test_get_environment_proxies(environment, proxies):
         ("http://", "https://example.com", False),
         ("all://", "https://example.com:123", True),
         ("", "https://example.com:123", True),
+        ("all://192.168.0.0/24", "http://192.168.0.1", True),
+        ("all://192.168.0.0/24", "https://192.168.1.1", False),
+        ("all://[2001:db8:abcd:0012::]/64", "http://[2001:db8:abcd:12::1]", True),
+        ("all://[2001:db8:abcd:0012::]/64", "http://[2001:db8:abcd:13::1]:8080", False),
     ],
 )
 def test_url_matches(pattern, url, expected):
-    pattern = URLPattern(pattern)
+    pattern = build_url_pattern(pattern)
     assert pattern.matches(httpx.URL(url)) == expected
+
+
+@pytest.mark.parametrize(
+    ["pattern", "url", "expected"],
+    [
+        ("all://192.168.0.0/24", "http://192.168.0.1", True),
+        ("all://192.168.0.1", "http://192.168.0.1", True),
+        ("all://192.168.0.0/24", "foobar", False),
+    ],
+)
+def test_IPNetPattern(pattern, url, expected):
+    proto, rest = pattern.split("://", 1)
+    pattern = IPNetPattern(rest)
+    assert pattern.matches(httpx.URL(url)) == expected
+
+
+def test_build_url_pattern():
+    pattern1 = build_url_pattern("all://192.168.0.0/16")
+    pattern2 = build_url_pattern("all://192.168.0.0/16")
+    pattern3 = build_url_pattern("all://192.168.0.1")
+    assert isinstance(pattern1, IPNetPattern)
+    assert isinstance(pattern2, IPNetPattern)
+    assert isinstance(pattern3, WildcardURLPattern)
+    assert pattern1 == pattern2
+    assert pattern2 != pattern3
+    assert pattern1 < pattern3
+    assert hash(pattern1) == hash(pattern2)
+    assert hash(pattern2) != hash(pattern3)
 
 
 def test_pattern_priority():
     matchers = [
-        URLPattern("all://"),
-        URLPattern("http://"),
-        URLPattern("http://example.com"),
-        URLPattern("http://example.com:123"),
+        build_url_pattern("all://"),
+        build_url_pattern("http://"),
+        build_url_pattern("http://example.com"),
+        build_url_pattern("http://example.com:123"),
+        build_url_pattern("all://192.168.0.0/16"),
     ]
     random.shuffle(matchers)
     assert sorted(matchers) == [
-        URLPattern("http://example.com:123"),
-        URLPattern("http://example.com"),
-        URLPattern("http://"),
-        URLPattern("all://"),
+        build_url_pattern("all://192.168.0.0/16"),
+        build_url_pattern("http://example.com:123"),
+        build_url_pattern("http://example.com"),
+        build_url_pattern("http://"),
+        build_url_pattern("all://"),
     ]
