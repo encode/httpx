@@ -1,7 +1,5 @@
 # Contributing
 
-## Update for 2026
-
 Thank you for your interest in contributing to HTTPX.
 
 We’re focusing our development efforts on [hip](https://github.com/encode/hip), the next version of HTTPX. It is designed to address fundamental architectural & security issues.
