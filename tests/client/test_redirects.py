@@ -202,8 +202,11 @@ def test_malformed_redirect():
 
 def test_invalid_redirect():
     client = httpx.Client(transport=httpx.MockTransport(redirects))
-    with pytest.raises(httpx.RemoteProtocolError):
-        client.get("http://example.org/invalid_redirect", follow_redirects=True)
+    response = client.get("http://example.org/invalid_redirect", follow_redirects=True)
+    assert response.status_code == httpx.codes.SEE_OTHER
+    assert response.url == "http://example.org/invalid_redirect"
+    assert not response.history
+    assert response.next_request is None
 
 
 def test_no_scheme_redirect():
@@ -441,7 +444,10 @@ def test_redirect_custom_scheme():
 @pytest.mark.anyio
 async def test_async_invalid_redirect():
     async with httpx.AsyncClient(transport=httpx.MockTransport(redirects)) as client:
-        with pytest.raises(httpx.RemoteProtocolError):
-            await client.get(
-                "http://example.org/invalid_redirect", follow_redirects=True
-            )
+        response = await client.get(
+            "http://example.org/invalid_redirect", follow_redirects=True
+        )
+        assert response.status_code == httpx.codes.SEE_OTHER
+        assert response.url == "http://example.org/invalid_redirect"
+        assert not response.history
+        assert response.next_request is None
