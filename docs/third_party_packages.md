@@ -78,7 +78,7 @@ A fast and powerful RPC framework based on ASGI/WSGI. Use HTTPX as the client of
 
 [GitHub](https://github.com/lepture/authlib) - [Documentation](https://docs.authlib.org/en/latest/)
 
-A python library for building OAuth and OpenID Connect clients and servers. Includes an [OAuth HTTPX client](https://docs.authlib.org/en/latest/client/httpx.html).
+A python library for building OAuth and OpenID Connect clients and servers. Includes an [OAuth HTTPX client](https://docs.authlib.org/en/latest/oauth2/client/http/httpx.html).
 
 ### Gidgethub
 

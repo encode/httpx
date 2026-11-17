@@ -109,7 +109,7 @@ Project documentation is available at [https://www.python-httpx.org/](https://ww
 
 For a run-through of all the basics, head over to the [QuickStart](https://www.python-httpx.org/quickstart/).
 
-For more advanced topics, see the [Advanced Usage](https://www.python-httpx.org/advanced/) section, the [async support](https://www.python-httpx.org/async/) section, or the [HTTP/2](https://www.python-httpx.org/http2/) section.
+For more advanced topics, see the [Advanced Usage](https://www.python-httpx.org/advanced/clients/) section, the [async support](https://www.python-httpx.org/async/) section, or the [HTTP/2](https://www.python-httpx.org/http2/) section.
 
 The [Developer Interface](https://www.python-httpx.org/api/) provides a comprehensive API reference.
 
