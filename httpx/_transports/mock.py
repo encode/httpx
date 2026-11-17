@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import datetime
+import time
 import typing
 
 from .._models import Request, Response
@@ -21,9 +23,12 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         request: Request,
     ) -> Response:
         request.read()
+        start = time.perf_counter()
         response = self.handler(request)
         if not isinstance(response, Response):  # pragma: no cover
             raise TypeError("Cannot use an async handler in a sync Client")
+        if not hasattr(response, "_elapsed"):
+            response.elapsed = datetime.timedelta(seconds=time.perf_counter() - start)
         return response
 
     async def handle_async_request(
@@ -31,6 +36,7 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         request: Request,
     ) -> Response:
         await request.aread()
+        start = time.perf_counter()
         response = self.handler(request)
 
         # Allow handler to *optionally* be an `async` function.
@@ -39,5 +45,8 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
 
         if not isinstance(response, Response):
             response = await response
+
+        if not hasattr(response, "_elapsed"):
+            response.elapsed = datetime.timedelta(seconds=time.perf_counter() - start)
 
         return response
