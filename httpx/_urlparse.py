@@ -239,7 +239,18 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     # Replace "netloc" with "host and "port".
     if "netloc" in kwargs:
         netloc = kwargs.pop("netloc") or ""
-        kwargs["host"], _, kwargs["port"] = netloc.partition(":")
+        if netloc.startswith("[") and "]" in netloc:
+            # Bracketed IPv6 literal: the port separator is the ":" that
+            # follows the closing bracket, not the first ":" inside it.
+            host, _, remainder = netloc.partition("]")
+            if remainder == "" or remainder.startswith(":"):
+                kwargs["host"], kwargs["port"] = host + "]", remainder[1:]
+            else:
+                # Malformed netloc such as "[::1]8080": keep the previous
+                # behaviour (first-colon split, which then fails validation).
+                kwargs["host"], _, kwargs["port"] = netloc.partition(":")
+        else:
+            kwargs["host"], _, kwargs["port"] = netloc.partition(":")
 
     # Replace "username" and/or "password" with "userinfo".
     if "username" in kwargs or "password" in kwargs:
