@@ -50,8 +50,9 @@ def create_ssl_context(
         )
         warnings.warn(message, DeprecationWarning)
         if os.path.isdir(verify):
-            return ssl.create_default_context(capath=verify)
-        return ssl.create_default_context(cafile=verify)
+            ctx = ssl.create_default_context(capath=verify)
+        else:
+            ctx = ssl.create_default_context(cafile=verify)
     else:
         ctx = verify
 
