@@ -1016,9 +1016,20 @@ class Client(BaseClient):
         assert isinstance(response.stream, SyncByteStream)
 
         response.request = request
-        response.stream = BoundSyncStream(
-            response.stream, response=response, start=start
-        )
+        if response.is_closed:
+            # A transport can return a response whose body is already loaded
+            # (mock transports, cached or preloaded responses). `Response.close()`
+            # returns early once `is_closed` is set, so `BoundSyncStream.close()`
+            # would never run and `.elapsed` would stay unset. A transport that
+            # already set `.elapsed` itself keeps its value.
+            if not hasattr(response, "_elapsed"):
+                response.elapsed = datetime.timedelta(
+                    seconds=time.perf_counter() - start
+                )
+        else:
+            response.stream = BoundSyncStream(
+                response.stream, response=response, start=start
+            )
         self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
 
@@ -1731,9 +1742,17 @@ class AsyncClient(BaseClient):
 
         assert isinstance(response.stream, AsyncByteStream)
         response.request = request
-        response.stream = BoundAsyncStream(
-            response.stream, response=response, start=start
-        )
+        if response.is_closed:
+            # Same reasoning as the sync path: a preloaded body never reaches
+            # `BoundAsyncStream.aclose()`, so set `.elapsed` here.
+            if not hasattr(response, "_elapsed"):
+                response.elapsed = datetime.timedelta(
+                    seconds=time.perf_counter() - start
+                )
+        else:
+            response.stream = BoundAsyncStream(
+                response.stream, response=response, start=start
+            )
         self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
 
