@@ -5,6 +5,7 @@ from .mock import *
 from .wsgi import *
 
 __all__ = [
+    "ASGIStreamingTransport",
     "ASGITransport",
     "AsyncBaseTransport",
     "BaseTransport",
