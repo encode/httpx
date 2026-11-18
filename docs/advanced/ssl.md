@@ -87,3 +87,7 @@ If you do need to make HTTPS connections to a local server, for example to test 
 ctx = ssl.create_default_context(cafile="client.pem")
 client = httpx.Client(verify=ctx)
 ```
+
+### SSL context performance issues
+
+It takes about 20ms to create an SSL context. While the default SSL context is cached, this issue is impactful if creating a number of clients (contexts) with a custom SSL context. It is recommended to reuse the same client in this case.
