@@ -93,7 +93,17 @@ When issuing requests or instantiating a client, the `auth` argument can be used
 * A callable, accepting a request and returning an authenticated request instance.
 * An instance of subclasses of `httpx.Auth`.
 
-The most involved of these is the last, which allows you to create authentication flows involving one or more requests. A subclass of `httpx.Auth` should implement `def auth_flow(request)`, and yield any requests that need to be made...
+The simplest way to implement a custom authentication scheme is to use a callable that accepts a single request and modifies it in place:
+
+```python
+def custom_auth(request):
+    request.headers["X-Auth-Token"] = "1234"
+    return request
+
+httpx.get("https://www.example.com", auth=custom_auth)
+```
+
+The most involved is the last, which allows you to create authentication flows involving one or more requests. A subclass of `httpx.Auth` should implement `def auth_flow(request)`, and yield any requests that need to be made...
 
 ```python
 class MyCustomAuth(httpx.Auth):
