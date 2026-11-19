@@ -250,8 +250,8 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     # Replace "raw_path" with "path" and "query".
     if "raw_path" in kwargs:
         raw_path = kwargs.pop("raw_path") or ""
-        kwargs["path"], seperator, kwargs["query"] = raw_path.partition("?")
-        if not seperator:
+        kwargs["path"], separator, kwargs["query"] = raw_path.partition("?")
+        if not separator:
             kwargs["query"] = None
 
     # Ensure that IPv6 "host" addresses are always escaped with "[...]".
