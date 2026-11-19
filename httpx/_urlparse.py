@@ -36,6 +36,11 @@ SUB_DELIMS = "!$&'()*+,;="
 
 PERCENT_ENCODED_REGEX = re.compile("%[A-Fa-f0-9]{2}")
 
+# ASCII control characters (C0 range plus DEL), the only codepoints that the
+# URL validation below rejects.  A compiled regex searches them in C, instead
+# of calling .isascii()/.isprintable() once per character in Python.
+ASCII_CONTROL_REGEX = re.compile(r"[\x00-\x1f\x7f]")
+
 # https://url.spec.whatwg.org/#percent-encoded-bytes
 
 # The fragment percent-encode set is the C0 control percent-encode set
@@ -220,9 +225,10 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
 
     # If a URL includes any ASCII control characters including \t, \r, \n,
     # then treat it as invalid.
-    if any(char.isascii() and not char.isprintable() for char in url):
-        char = next(char for char in url if char.isascii() and not char.isprintable())
-        idx = url.find(char)
+    control = ASCII_CONTROL_REGEX.search(url)
+    if control is not None:
+        char = control.group(0)
+        idx = control.start()
         error = (
             f"Invalid non-printable ASCII character in URL, {char!r} at position {idx}."
         )
@@ -505,6 +511,11 @@ def quote(string: str, safe: str) -> str:
         need to be escaped. Unreserved characters are always treated as safe.
         See: https://www.rfc-editor.org/rfc/rfc3986#section-2.3
     """
+    # Fast path: no existing escape sequences, so the regex scan below can
+    # only fail to match.  Most URLs take this branch.
+    if "%" not in string:
+        return percent_encoded(string, safe=safe)
+
     parts = []
     current_position = 0
     for match in re.finditer(PERCENT_ENCODED_REGEX, string):
