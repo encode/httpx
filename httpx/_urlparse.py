@@ -444,35 +444,67 @@ def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:
             raise InvalidURL("Relative URLs cannot have a path starting with ':'")
 
 
+def _dot_segment_length(component: str) -> int:
+    """
+    Return 1 or 2 if a path component is a "." or ".." segment, else 0.
+
+    Percent-encoded forms are equivalent to the literal characters.
+    For example "%2e", ".%2e" and "%2E%2e" are all dot segments,
+    as "%2E" percent-decodes to ".".
+
+    See https://datatracker.ietf.org/doc/html/rfc3986#section-6.2.2.2
+    """
+    decoded = component.lower().replace("%2e", ".")
+    if decoded == ".":
+        return 1
+    elif decoded == "..":
+        return 2
+    return 0
+
+
 def normalize_path(path: str) -> str:
     """
     Drop "." and ".." segments from a URL path.
 
     For example:
 
-        normalize_path("/path/./to/somewhere/..") == "/path/to"
+        normalize_path("/path/./to/somewhere/..") == "/path/to/"
     """
-    # Fast return when no '.' characters in the path.
-    if "." not in path:
+    # Fast return when no '.' characters in the path,
+    # and no percent-encoded '.' characters either.
+    if "." not in path and "%2e" not in path.lower():
         return path
 
     components = path.split("/")
 
     # Fast return when no '.' or '..' components in the path.
-    if "." not in components and ".." not in components:
+    if all(_dot_segment_length(component) == 0 for component in components):
         return path
 
     # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
     output: list[str] = []
     for component in components:
-        if component == ".":
+        dot_length = _dot_segment_length(component)
+        if dot_length == 1:
             pass
-        elif component == "..":
+        elif dot_length == 2:
             if output and output != [""]:
                 output.pop()
         else:
             output.append(component)
-    return "/".join(output)
+
+    normalized = "/".join(output)
+
+    # A trailing "." or ".." segment is replaced by a trailing "/",
+    # rather than simply being dropped.
+    # For example "/a/b/.." is normalized to "/a/", and not "/a".
+    if components and _dot_segment_length(components[-1]) != 0:
+        if normalized and not normalized.endswith("/"):
+            normalized += "/"
+        elif not normalized and "/" in path:
+            normalized = "/"
+
+    return normalized
 
 
 def PERCENT(string: str) -> str:
