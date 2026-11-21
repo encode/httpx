@@ -369,6 +369,9 @@ class BaseClient:
         headers = self._merge_headers(headers)
         cookies = self._merge_cookies(cookies)
         params = self._merge_queryparams(params)
+        if params is not None and url.query:
+            params = QueryParams(url.query).merge(params)
+            url = url.copy_with(raw_path=url.raw_path.partition(b"?")[0])
         extensions = {} if extensions is None else extensions
         if "timeout" not in extensions:
             timeout = (

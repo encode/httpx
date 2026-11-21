@@ -241,6 +241,12 @@ def test_merge_relative_url_with_query_in_base_url():
     request = client.build_request("GET", "/subpath?other=2")
     assert request.url == "https://www.example.com/get/subpath?other=2"
 
+    request = client.build_request("GET", "", params={"lang": "en"})
+    assert request.url == "https://www.example.com/get/?data=1&lang=en"
+
+    request = client.build_request("GET", "/subpath", params={"lang": "en"})
+    assert request.url == "https://www.example.com/get/subpath?data=1&lang=en"
+
 
 def test_context_managed_transport():
     class Transport(httpx.BaseTransport):
