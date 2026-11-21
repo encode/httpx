@@ -20,7 +20,7 @@ Provides authentication classes to be used with HTTPX's [authentication paramete
 
 ### httpx-caching
 
-[Github](https://github.com/johtso/httpx-caching)
+[GitHub](https://github.com/johtso/httpx-caching)
 
 This package adds caching functionality to HTTPX
 
