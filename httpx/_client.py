@@ -232,9 +232,11 @@ class BaseClient:
         return self._trust_env
 
     def _enforce_trailing_slash(self, url: URL) -> URL:
-        if url.raw_path.endswith(b"/"):
+        path, sep, query = url.raw_path.partition(b"?")
+        if path.endswith(b"/"):
             return url
-        return url.copy_with(raw_path=url.raw_path + b"/")
+        new_raw_path = path + b"/" + (sep + query if sep else b"")
+        return url.copy_with(raw_path=new_raw_path)
 
     def _get_proxy_map(
         self, proxy: ProxyTypes | None, allow_env_proxies: bool
@@ -406,8 +408,16 @@ class BaseClient:
             # URL('https://www.example.com/subpath/')
             # >>> client.build_request("GET", "/path").url
             # URL('https://www.example.com/subpath/path')
-            merge_raw_path = self.base_url.raw_path + merge_url.raw_path.lstrip(b"/")
-            return self.base_url.copy_with(raw_path=merge_raw_path)
+            base_path, base_sep, base_query = self.base_url.raw_path.partition(b"?")
+            merge_path, merge_sep, merge_query = merge_url.raw_path.partition(b"?")
+            merged_path = base_path + merge_path.lstrip(b"/")
+            if merge_sep:
+                query = merge_sep + merge_query
+            elif base_sep:
+                query = base_sep + base_query
+            else:
+                query = b""
+            return self.base_url.copy_with(raw_path=merged_path + query)
         return merge_url
 
     def _merge_cookies(self, cookies: CookieTypes | None = None) -> CookieTypes | None:
