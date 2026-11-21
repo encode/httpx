@@ -234,21 +234,26 @@ class DigestAuth(Auth):
         # This method should only ever have been called with a Digest auth header.
         assert scheme.lower() == "digest"
 
-        header_dict: dict[str, str] = {}
-        for field in parse_http_list(fields):
-            key, value = field.strip().split("=", 1)
-            header_dict[key] = unquote(value)
-
         try:
+            header_dict: dict[str, str] = {}
+            for field in parse_http_list(fields):
+                key, value = field.strip().split("=", 1)
+                header_dict[key] = unquote(value)
+
             realm = header_dict["realm"].encode()
             nonce = header_dict["nonce"].encode()
             algorithm = header_dict.get("algorithm", "MD5")
+            if algorithm.upper() not in self._ALGORITHM_TO_HASH_FUNCTION:
+                raise ProtocolError(
+                    f"Unsupported algorithm '{algorithm}' in Digest auth challenge",
+                    request=request,
+                )
             opaque = header_dict["opaque"].encode() if "opaque" in header_dict else None
             qop = header_dict["qop"].encode() if "qop" in header_dict else None
             return _DigestAuthChallenge(
                 realm=realm, nonce=nonce, algorithm=algorithm, opaque=opaque, qop=qop
             )
-        except KeyError as exc:
+        except (KeyError, ValueError) as exc:
             message = "Malformed Digest WWW-Authenticate header"
             raise ProtocolError(message, request=request) from exc
 
