@@ -20,7 +20,7 @@ Provides authentication classes to be used with HTTPX's [authentication paramete
 
 ### httpx-caching
 
-[Github](https://github.com/johtso/httpx-caching)
+[GitHub](https://github.com/johtso/httpx-caching)
 
 This package adds caching functionality to HTTPX
 
@@ -68,7 +68,7 @@ A utility for mocking out HTTPX.
 
 ### rpc.py
 
-[Github](https://github.com/abersheeran/rpc.py) - [Documentation](https://github.com/abersheeran/rpc.py#rpcpy)
+[GitHub](https://github.com/abersheeran/rpc.py) - [Documentation](https://github.com/abersheeran/rpc.py#rpcpy)
 
 A fast and powerful RPC framework based on ASGI/WSGI. Use HTTPX as the client of the RPC service.
 
