@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime
 
@@ -42,7 +43,7 @@ async def test_async_retry_after_503():
 
 def test_retry_after_seconds(monkeypatch):
     attempts = 0
-    delays = []
+    delays: list[float] = []
 
     def handler(request):
         nonlocal attempts
@@ -51,7 +52,7 @@ def test_retry_after_seconds(monkeypatch):
             return httpx.Response(429, headers={"Retry-After": "3"})
         return httpx.Response(200)
 
-    monkeypatch.setattr(client_module.time, "sleep", delays.append)
+    monkeypatch.setattr(client_module.time, "sleep", delays.append)  # type: ignore
     transport = httpx.MockTransport(handler)
     with httpx.Client(transport=transport, max_retries=1) as client:
         response = client.get("https://example.com")
@@ -62,7 +63,7 @@ def test_retry_after_seconds(monkeypatch):
 
 def test_retry_after_http_date(monkeypatch):
     attempts = 0
-    delays = []
+    delays: list[float] = []
 
     def handler(request):
         nonlocal attempts
@@ -75,7 +76,7 @@ def test_retry_after_http_date(monkeypatch):
             )
         return httpx.Response(200)
 
-    monkeypatch.setattr(client_module.time, "sleep", delays.append)
+    monkeypatch.setattr(client_module.time, "sleep", delays.append)  # type: ignore
     transport = httpx.MockTransport(handler)
     with httpx.Client(transport=transport, max_retries=1) as client:
         response = client.get("https://example.com")
@@ -89,7 +90,7 @@ def test_retry_after_http_date(monkeypatch):
 def test_exponential_backoff_uses_jitter(monkeypatch):
     attempts = 0
     bounds = []
-    delays = []
+    delays: list[float] = []
 
     def uniform(low, high):
         bounds.append((low, high))
@@ -100,8 +101,8 @@ def test_exponential_backoff_uses_jitter(monkeypatch):
         attempts += 1
         return httpx.Response(200 if attempts == 3 else 503)
 
-    monkeypatch.setattr(client_module.random, "uniform", uniform)
-    monkeypatch.setattr(client_module.time, "sleep", delays.append)
+    monkeypatch.setattr(client_module.random, "uniform", uniform)  # type: ignore
+    monkeypatch.setattr(client_module.time, "sleep", delays.append)  # type: ignore
     transport = httpx.MockTransport(handler)
     with httpx.Client(
         transport=transport, max_retries=2, retry_backoff_base=0.25
@@ -116,7 +117,7 @@ def test_exponential_backoff_uses_jitter(monkeypatch):
 @pytest.mark.anyio
 async def test_async_retry_after_http_date(monkeypatch):
     attempts = 0
-    delays = []
+    delays: list[float] = []
 
     async def sleep(delay):
         delays.append(delay)
@@ -132,7 +133,7 @@ async def test_async_retry_after_http_date(monkeypatch):
             )
         return httpx.Response(200)
 
-    monkeypatch.setattr(client_module.anyio, "sleep", sleep)
+    monkeypatch.setattr(client_module.anyio, "sleep", sleep)  # type: ignore
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(transport=transport, max_retries=1) as client:
         response = await client.get("https://example.com")
@@ -222,7 +223,7 @@ async def test_async_post_is_not_retried():
 async def test_async_generator_body_is_not_retried():
     attempts = 0
 
-    async def content():
+    async def content() -> AsyncIterator[bytes]:
         yield b"body"
 
     def handler(request):

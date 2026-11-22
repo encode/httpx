@@ -262,11 +262,13 @@ class BaseClient:
                     retry_at = email.utils.parsedate_to_datetime(retry_after)
                     if retry_at.tzinfo is None:
                         retry_at = retry_at.replace(tzinfo=datetime.timezone.utc)
-                    return max(
-                        0.0,
-                        (
-                            retry_at - datetime.datetime.now(datetime.timezone.utc)
-                        ).total_seconds(),
+                    return float(
+                        max(
+                            0.0,
+                            (
+                                retry_at - datetime.datetime.now(datetime.timezone.utc)
+                            ).total_seconds(),
+                        )
                     )
                 except (TypeError, ValueError, OverflowError):
                     pass
