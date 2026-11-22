@@ -246,8 +246,7 @@ class BaseClient:
             request.method.upper() in self.retry_methods
             and request_stream_replayable
             and (
-                response.status_code in (408, 429)
-                or 500 <= response.status_code < 600
+                response.status_code in (408, 429) or 500 <= response.status_code < 600
             )
         )
 
@@ -1065,11 +1064,8 @@ class Client(BaseClient):
                     response.close()
                     raise exc
 
-                if (
-                    retry_count >= self.max_retries
-                    or not self._should_retry(
-                        request, response, request_stream_replayable
-                    )
+                if retry_count >= self.max_retries or not self._should_retry(
+                    request, response, request_stream_replayable
                 ):
                     break
 
@@ -1822,11 +1818,8 @@ class AsyncClient(BaseClient):
                     await response.aclose()
                     raise exc
 
-                if (
-                    retry_count >= self.max_retries
-                    or not self._should_retry(
-                        request, response, request_stream_replayable
-                    )
+                if retry_count >= self.max_retries or not self._should_retry(
+                    request, response, request_stream_replayable
                 ):
                     break
 
