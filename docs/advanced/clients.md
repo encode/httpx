@@ -129,6 +129,26 @@ If you need finer-grained control on the merging of client-level and request-lev
 
 Additionally, `Client` accepts some configuration options that aren't available at the request level.
 
+### Retrying responses
+
+Status-code retries are disabled by default. To enable them, configure
+`max_retries` on either a `Client` or `AsyncClient`:
+
+```python
+with httpx.Client(max_retries=3, retry_backoff_base=0.5) as client:
+    response = client.get("https://example.com")
+```
+
+Retries are limited to 408, 429, and 5xx responses. The client honors a valid
+`Retry-After` header in either seconds or HTTP-date format; otherwise it uses
+exponential backoff with jitter. By default, only `GET`, `HEAD`, `OPTIONS`,
+`PUT`, and `DELETE` requests are retried. To customize the eligible methods,
+pass `retry_methods`, for example `retry_methods=("GET", "POST")`.
+
+Byte-backed request bodies for eligible methods can be replayed between attempts.
+Streaming request bodies, such as generators and file streams, are sent once and
+are not retried because they cannot be replayed safely.
+
 For example, `base_url` allows you to prepend an URL to all outgoing requests:
 
 ```pycon

@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 * Expose `FunctionAuth` from the public API. (#3699)
+* Add opt-in status-code retries to `Client` and `AsyncClient`.
 
 ## 0.28.1 (6th December, 2024)
 
