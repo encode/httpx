@@ -318,3 +318,129 @@ def test_retries_are_disabled_by_default():
 
     assert response.status_code == 503
     assert attempts == 1
+
+
+def test_max_retries_rejects_negative_value():
+    with pytest.raises(ValueError, match="max_retries must be non-negative."):
+        httpx.Client(max_retries=-1)
+
+
+def test_retry_backoff_base_rejects_negative_value():
+    with pytest.raises(ValueError, match="retry_backoff_base must be non-negative."):
+        httpx.Client(retry_backoff_base=-1)
+
+
+def test_retry_after_http_date_without_timezone(monkeypatch):
+    attempts = 0
+    delays: list[float] = []
+
+    def handler(request):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            retry_at = datetime.now(timezone.utc) + timedelta(seconds=30)
+            retry_after = format_datetime(retry_at, usegmt=True).removesuffix(" GMT")
+            return httpx.Response(
+                503,
+                headers={"Retry-After": retry_after},
+            )
+        return httpx.Response(200)
+
+    monkeypatch.setattr(client_module.time, "sleep", delays.append)  # type: ignore
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, max_retries=1) as client:
+        response = client.get("https://example.com")
+
+    assert response.status_code == 200
+    assert attempts == 2
+    assert len(delays) == 1
+    assert 28 <= delays[0] <= 30
+
+
+def test_retry_after_invalid_value_uses_backoff(monkeypatch):
+    attempts = 0
+    bounds = []
+    delays: list[float] = []
+
+    def uniform(low, high):
+        bounds.append((low, high))
+        return high
+
+    def handler(request):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(
+                503,
+                headers={"Retry-After": "not-a-date"},
+            )
+        return httpx.Response(200)
+
+    monkeypatch.setattr(client_module.random, "uniform", uniform)  # type: ignore
+    monkeypatch.setattr(client_module.time, "sleep", delays.append)  # type: ignore
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(
+        transport=transport, max_retries=1, retry_backoff_base=0.25
+    ) as client:
+        response = client.get("https://example.com")
+
+    assert response.status_code == 200
+    assert bounds == [(0.0, 0.25)]
+    assert delays == [0.25]
+
+
+def test_retry_after_negative_value_uses_backoff(monkeypatch):
+    attempts = 0
+    bounds = []
+    delays: list[float] = []
+
+    def uniform(low, high):
+        bounds.append((low, high))
+        return high
+
+    def handler(request):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(
+                503,
+                headers={"Retry-After": "-5"},
+            )
+        return httpx.Response(200)
+
+    monkeypatch.setattr(client_module.random, "uniform", uniform)  # type: ignore
+    monkeypatch.setattr(client_module.time, "sleep", delays.append)  # type: ignore
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(
+        transport=transport, max_retries=1, retry_backoff_base=0.25
+    ) as client:
+        response = client.get("https://example.com")
+
+    assert response.status_code == 200
+    assert bounds == [(0.0, 0.25)]
+    assert delays == [0.25]
+
+
+def test_retry_after_http_date_in_past(monkeypatch):
+    attempts = 0
+    delays: list[float] = []
+
+    def handler(request):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            retry_at = datetime.now(timezone.utc) - timedelta(seconds=30)
+            return httpx.Response(
+                503,
+                headers={"Retry-After": format_datetime(retry_at, usegmt=True)},
+            )
+        return httpx.Response(200)
+
+    monkeypatch.setattr(client_module.time, "sleep", delays.append)  # type: ignore
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, max_retries=1) as client:
+        response = client.get("https://example.com")
+
+    assert response.status_code == 200
+    assert attempts == 2
+    assert delays == [0.0]
