@@ -141,7 +141,9 @@ with httpx.Client(max_retries=3, retry_backoff_base=0.5) as client:
 
 Retries are limited to 408, 429, and 5xx responses. The client honors a valid
 `Retry-After` header in either seconds or HTTP-date format; otherwise it uses
-exponential backoff with jitter. By default, only `GET`, `HEAD`, `OPTIONS`,
+exponential backoff with jitter. A `Retry-After` delay is capped at
+`retry_after_max` seconds (60 by default), so a server cannot make the client
+wait for an unbounded amount of time. By default, only `GET`, `HEAD`, `OPTIONS`,
 `PUT`, and `DELETE` requests are retried. To customize the eligible methods,
 pass `retry_methods`, for example `retry_methods=("GET", "POST")`.
 
