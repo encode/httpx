@@ -444,3 +444,97 @@ def test_retry_after_http_date_in_past(monkeypatch):
     assert response.status_code == 200
     assert attempts == 2
     assert delays == [0.0]
+
+
+def test_retry_after_seconds_is_capped_at_default_max(monkeypatch):
+    attempts = 0
+    delays: list[float] = []
+
+    def handler(request):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(503, headers={"Retry-After": "86400"})
+        return httpx.Response(200)
+
+    monkeypatch.setattr(client_module.time, "sleep", delays.append)  # type: ignore
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, max_retries=1) as client:
+        response = client.get("https://example.com")
+
+    assert response.status_code == 200
+    assert delays == [60.0]
+
+
+def test_retry_after_seconds_respects_custom_max(monkeypatch):
+    attempts = 0
+    delays: list[float] = []
+
+    def handler(request):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(429, headers={"Retry-After": "30"})
+        return httpx.Response(200)
+
+    monkeypatch.setattr(client_module.time, "sleep", delays.append)  # type: ignore
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, max_retries=1, retry_after_max=10) as client:
+        response = client.get("https://example.com")
+
+    assert response.status_code == 200
+    assert delays == [10.0]
+
+
+def test_retry_after_http_date_is_capped_at_default_max(monkeypatch):
+    attempts = 0
+    delays: list[float] = []
+
+    def handler(request):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            retry_at = datetime.now(timezone.utc) + timedelta(seconds=86400)
+            return httpx.Response(
+                503,
+                headers={"Retry-After": format_datetime(retry_at, usegmt=True)},
+            )
+        return httpx.Response(200)
+
+    monkeypatch.setattr(client_module.time, "sleep", delays.append)  # type: ignore
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, max_retries=1) as client:
+        response = client.get("https://example.com")
+
+    assert response.status_code == 200
+    assert attempts == 2
+    assert delays == [60.0]
+
+
+@pytest.mark.anyio
+async def test_async_retry_after_seconds_is_capped_at_default_max(monkeypatch):
+    attempts = 0
+    delays: list[float] = []
+
+    async def sleep(delay):
+        delays.append(delay)
+
+    def handler(request):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(503, headers={"Retry-After": "86400"})
+        return httpx.Response(200)
+
+    monkeypatch.setattr(client_module.anyio, "sleep", sleep)  # type: ignore
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport, max_retries=1) as client:
+        response = await client.get("https://example.com")
+
+    assert response.status_code == 200
+    assert delays == [60.0]
+
+
+def test_retry_after_max_rejects_negative_value():
+    with pytest.raises(ValueError, match="retry_after_max must be non-negative."):
+        httpx.Client(retry_after_max=-1)
