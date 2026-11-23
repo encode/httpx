@@ -176,23 +176,22 @@ class ZStandardDecoder(ContentDecoder):
 
         self.decompressor = zstandard.ZstdDecompressor().decompressobj()
         self.seen_data = False
-        self.seen_eof = False
 
     def decode(self, data: bytes) -> bytes:
         assert zstandard is not None
         self.seen_data = True
         output = io.BytesIO()
         try:
+            # zstd decompressors cannot be reused after EOF, so start a new one
+            # when more data arrives after a completed frame. This is done lazily
+            # so that `flush()` can check whether the current frame is complete.
+            if data and self.decompressor.eof:
+                self.decompressor = zstandard.ZstdDecompressor().decompressobj()
             output.write(self.decompressor.decompress(data))
             while self.decompressor.eof and self.decompressor.unused_data:
                 unused_data = self.decompressor.unused_data
                 self.decompressor = zstandard.ZstdDecompressor().decompressobj()
                 output.write(self.decompressor.decompress(unused_data))
-            # If the decompressor reached EOF, create a new one for the next call
-            # since zstd decompressors cannot be reused after EOF
-            if self.decompressor.eof:
-                self.seen_eof = True
-                self.decompressor = zstandard.ZstdDecompressor().decompressobj()
         except zstandard.ZstdError as exc:
             raise DecodingError(str(exc)) from exc
         return output.getvalue()
@@ -201,8 +200,8 @@ class ZStandardDecoder(ContentDecoder):
         if not self.seen_data:
             return b""
         ret = self.decompressor.flush()  # note: this is a no-op
-        if not self.decompressor.eof and not self.seen_eof:
-            raise DecodingError("Zstandard data is incomplete")  # pragma: no cover
+        if not self.decompressor.eof:
+            raise DecodingError("Zstandard data is incomplete")
         return bytes(ret)
 
 
