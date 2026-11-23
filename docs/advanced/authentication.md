@@ -42,7 +42,7 @@ HTTP digest authentication is a challenge-response authentication scheme. Unlike
 
 ## NetRC authentication
 
-HTTPX can be configured to use [a `.netrc` config file](https://everything.curl.dev/usingcurl/netrc) for authentication.
+HTTPX can be configured to use [a `.netrc` config file](https://everything.curl.dev/usingcurl/netrc.html) for authentication.
 
 The `.netrc` config file allows authentication credentials to be associated with specified hosts. When a request is made to a host that is found in the netrc file, the username and password will be included using HTTP basic authentication.
 
