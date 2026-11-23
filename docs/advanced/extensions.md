@@ -165,8 +165,9 @@ Using the 'target' extension to send requests without the standard path escaping
 #
 # Note that requests must still be valid HTTP requests.
 # For example including whitespace in the target will raise a `LocalProtocolError`.
+client = httpx.Client()
 extensions = {"target": b"/test^path"}
-response = httpx.get("https://www.example.com", extensions=extensions)
+response = client.get("https://www.example.com", extensions=extensions)
 ```
 
 The `target` extension also allows server-wide `OPTIONS *` requests to be constructed...
@@ -174,9 +175,10 @@ The `target` extension also allows server-wide `OPTIONS *` requests to be constr
 ```python
 # This will send the following request...
 #
-# CONNECT * HTTP/1.1
+# OPTIONS * HTTP/1.1
+client = httpx.Client()
 extensions = {"target": b"*"}
-response = httpx.request("CONNECT", "https://www.example.com", extensions=extensions)
+response = client.request("OPTIONS", "https://www.example.com", extensions=extensions)
 ```
 
 ## Response Extensions
