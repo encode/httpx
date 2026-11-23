@@ -204,6 +204,7 @@ class BaseClient:
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         max_retries: int = 0,
         retry_backoff_base: float = 0.5,
+        retry_after_max: float = 60.0,
         retry_methods: typing.Collection[str] = DEFAULT_RETRY_METHODS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
@@ -225,8 +226,11 @@ class BaseClient:
             raise ValueError("max_retries must be non-negative.")
         if retry_backoff_base < 0:
             raise ValueError("retry_backoff_base must be non-negative.")
+        if retry_after_max < 0:
+            raise ValueError("retry_after_max must be non-negative.")
         self.max_retries = max_retries
         self.retry_backoff_base = retry_backoff_base
+        self.retry_after_max = retry_after_max
         self.retry_methods = frozenset(method.upper() for method in retry_methods)
         self._event_hooks = {
             "request": list(event_hooks.get("request", [])),
@@ -256,20 +260,16 @@ class BaseClient:
             try:
                 delay = int(retry_after)
                 if delay >= 0:
-                    return float(delay)
+                    return min(float(delay), self.retry_after_max)
             except ValueError:
                 try:
                     retry_at = email.utils.parsedate_to_datetime(retry_after)
                     if retry_at.tzinfo is None:
                         retry_at = retry_at.replace(tzinfo=datetime.timezone.utc)
-                    return float(
-                        max(
-                            0.0,
-                            (
-                                retry_at - datetime.datetime.now(datetime.timezone.utc)
-                            ).total_seconds(),
-                        )
-                    )
+                    delay_seconds = (
+                        retry_at - datetime.datetime.now(datetime.timezone.utc)
+                    ).total_seconds()
+                    return min(max(0.0, delay_seconds), self.retry_after_max)
                 except (TypeError, ValueError, OverflowError):
                     pass
 
@@ -685,6 +685,8 @@ class Client(BaseClient):
     and 5xx responses. Defaults to `0`, which disables status-code retries.
     * **retry_backoff_base** - *(optional)* The base delay, in seconds, for
     exponential backoff with jitter. Defaults to `0.5`.
+    * **retry_after_max** - *(optional)* The maximum delay, in seconds, that a
+    `Retry-After` response header can impose. Defaults to `60.0`.
     * **retry_methods** - *(optional)* The HTTP methods eligible for retries.
     Defaults to `("GET", "HEAD", "OPTIONS", "PUT", "DELETE")`.
     * **base_url** - *(optional)* A URL to use as the base when building
@@ -718,6 +720,7 @@ class Client(BaseClient):
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         max_retries: int = 0,
         retry_backoff_base: float = 0.5,
+        retry_after_max: float = 60.0,
         retry_methods: typing.Collection[str] = DEFAULT_RETRY_METHODS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
@@ -734,6 +737,7 @@ class Client(BaseClient):
             max_redirects=max_redirects,
             max_retries=max_retries,
             retry_backoff_base=retry_backoff_base,
+            retry_after_max=retry_after_max,
             retry_methods=retry_methods,
             event_hooks=event_hooks,
             base_url=base_url,
@@ -1438,6 +1442,8 @@ class AsyncClient(BaseClient):
     and 5xx responses. Defaults to `0`, which disables status-code retries.
     * **retry_backoff_base** - *(optional)* The base delay, in seconds, for
     exponential backoff with jitter. Defaults to `0.5`.
+    * **retry_after_max** - *(optional)* The maximum delay, in seconds, that a
+    `Retry-After` response header can impose. Defaults to `60.0`.
     * **retry_methods** - *(optional)* The HTTP methods eligible for retries.
     Defaults to `("GET", "HEAD", "OPTIONS", "PUT", "DELETE")`.
     * **base_url** - *(optional)* A URL to use as the base when building
@@ -1470,6 +1476,7 @@ class AsyncClient(BaseClient):
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         max_retries: int = 0,
         retry_backoff_base: float = 0.5,
+        retry_after_max: float = 60.0,
         retry_methods: typing.Collection[str] = DEFAULT_RETRY_METHODS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
@@ -1487,6 +1494,7 @@ class AsyncClient(BaseClient):
             max_redirects=max_redirects,
             max_retries=max_retries,
             retry_backoff_base=retry_backoff_base,
+            retry_after_max=retry_after_max,
             retry_methods=retry_methods,
             event_hooks=event_hooks,
             base_url=base_url,
