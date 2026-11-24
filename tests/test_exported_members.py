@@ -11,3 +11,8 @@ def test_all_imports_are_exported() -> None:
         ),
         key=str.casefold,
     )
+
+def test_public_docstrings() -> None:
+    assert httpx.__doc__ and httpx.__doc__.strip()
+    assert httpx.Request.__doc__ and httpx.Request.__doc__.strip()
+    assert httpx.Response.__doc__ and httpx.Response.__doc__.strip()
