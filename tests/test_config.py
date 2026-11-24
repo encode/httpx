@@ -182,3 +182,9 @@ def test_proxy_with_auth_from_url():
 def test_invalid_proxy_scheme():
     with pytest.raises(ValueError):
         httpx.Proxy("invalid://example.com")
+
+
+def test_default_ssl_context_is_cached() -> None:
+    ctx1 = httpx.create_ssl_context()
+    ctx2 = httpx.create_ssl_context()
+    assert ctx1 is ctx2

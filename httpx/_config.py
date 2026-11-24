@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import os
 import typing
 
@@ -20,6 +21,17 @@ class UnsetType:
 UNSET = UnsetType()
 
 
+@functools.lru_cache(maxsize=8)
+def _cached_default_ssl_context(
+    cafile: str | None = None,
+    capath: str | None = None,
+    keylog_file: str | None = None,
+) -> ssl.SSLContext:
+    import ssl
+
+    return ssl.create_default_context(cafile=cafile, capath=capath)
+
+
 def create_ssl_context(
     verify: ssl.SSLContext | str | bool = True,
     cert: CertTypes | None = None,
@@ -31,13 +43,29 @@ def create_ssl_context(
     import certifi
 
     if verify is True:
+        keylog_file = os.environ.get("SSLKEYLOGFILE")
         if trust_env and os.environ.get("SSL_CERT_FILE"):  # pragma: nocover
-            ctx = ssl.create_default_context(cafile=os.environ["SSL_CERT_FILE"])
+            cafile = os.environ["SSL_CERT_FILE"]
+            ctx = (
+                ssl.create_default_context(cafile=cafile)
+                if cert
+                else _cached_default_ssl_context(cafile=cafile, keylog_file=keylog_file)
+            )
         elif trust_env and os.environ.get("SSL_CERT_DIR"):  # pragma: nocover
-            ctx = ssl.create_default_context(capath=os.environ["SSL_CERT_DIR"])
+            capath = os.environ["SSL_CERT_DIR"]
+            ctx = (
+                ssl.create_default_context(capath=capath)
+                if cert
+                else _cached_default_ssl_context(capath=capath, keylog_file=keylog_file)
+            )
         else:
             # Default case...
-            ctx = ssl.create_default_context(cafile=certifi.where())
+            cafile = certifi.where()
+            ctx = (
+                ssl.create_default_context(cafile=cafile)
+                if cert
+                else _cached_default_ssl_context(cafile=cafile, keylog_file=keylog_file)
+            )
     elif verify is False:
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ctx.check_hostname = False
