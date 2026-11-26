@@ -188,10 +188,13 @@ class DigestAuth(Auth):
         self._username = to_bytes(username)
         self._password = to_bytes(password)
         self._last_challenge: _DigestAuthChallenge | None = None
+        self._last_challenge_origin: tuple[str, bytes] | None = None
         self._nonce_count = 1
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
-        if self._last_challenge:
+        origin = (request.url.scheme, request.url.netloc)
+
+        if self._last_challenge and self._last_challenge_origin == origin:
             request.headers["Authorization"] = self._build_auth_header(
                 request, self._last_challenge
             )
@@ -212,6 +215,7 @@ class DigestAuth(Auth):
             return
 
         self._last_challenge = self._parse_challenge(request, response, auth_header)
+        self._last_challenge_origin = origin
         self._nonce_count = 1
 
         request.headers["Authorization"] = self._build_auth_header(

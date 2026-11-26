@@ -554,6 +554,25 @@ async def test_digest_auth_reuses_challenge() -> None:
 
 
 @pytest.mark.anyio
+async def test_digest_auth_does_not_reuse_challenge_for_other_origin() -> None:
+    auth = httpx.DigestAuth(username="user", password="password123")
+    app = DigestApp()
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+        response_1 = await client.get("https://example.org/", auth=auth)
+        response_2 = await client.get("https://example.com/", auth=auth)
+
+    assert response_1.status_code == 200
+    assert len(response_1.history) == 1
+
+    # The challenge from 'example.org' must not be replayed to 'example.com',
+    # which would disclose a digest response derived from the user's password
+    # to an unrelated origin.
+    assert response_2.status_code == 200
+    assert response_2.json() == {"auth": None}
+
+
+@pytest.mark.anyio
 async def test_digest_auth_resets_nonce_count_after_401() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
