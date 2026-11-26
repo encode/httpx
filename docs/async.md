@@ -155,7 +155,7 @@ asyncio.run(main())
 ### [Trio](https://github.com/python-trio/trio)
 
 Trio is [an alternative async library](https://trio.readthedocs.io/en/stable/),
-designed around the [the principles of structured concurrency](https://en.wikipedia.org/wiki/Structured_concurrency).
+designed around [the principles of structured concurrency](https://en.wikipedia.org/wiki/Structured_concurrency).
 
 ```python
 import httpx
@@ -191,4 +191,4 @@ anyio.run(main, backend='trio')
 
 ## Calling into Python Web Apps
 
-For details on calling directly into ASGI applications, see [the `ASGITransport` docs](../advanced/transports#asgitransport).
+For details on calling directly into ASGI applications, see [the `ASGITransport` docs](advanced/transports.md#asgitransport).
