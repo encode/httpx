@@ -141,6 +141,54 @@ def test_zstd_multiframe():
     assert response.content == b"foobar"
 
 
+def test_zstd_streaming_multiple_frames():
+    body1 = b"test 123 "
+    body2 = b"another frame"
+
+    # Create two separate complete frames
+    frame1 = zstd.compress(body1)
+    frame2 = zstd.compress(body2)
+
+    # Create an iterator that yields frames separately
+    def content_iterator() -> typing.Iterator[bytes]:
+        yield frame1
+        yield frame2
+
+    headers = [(b"Content-Encoding", b"zstd")]
+    response = httpx.Response(200, headers=headers, content=content_iterator())
+    response.read()
+
+    assert response.content == body1 + body2
+
+
+def test_zstd_streaming_truncated_second_frame():
+    frame1 = zstd.compress(b"first")
+    frame2 = zstd.compress(b"second")
+
+    def content_iterator() -> typing.Iterator[bytes]:
+        yield frame1
+        yield frame2[:12]
+
+    headers = [(b"Content-Encoding", b"zstd")]
+    response = httpx.Response(200, headers=headers, content=content_iterator())
+    with pytest.raises(httpx.DecodingError):
+        response.read()
+
+
+def test_zstd_streaming_empty_chunk_after_frame():
+    frame = zstd.compress(b"complete")
+
+    def content_iterator() -> typing.Iterator[bytes]:
+        yield frame
+        yield b""
+
+    headers = [(b"Content-Encoding", b"zstd")]
+    response = httpx.Response(200, headers=headers, content=content_iterator())
+    response.read()
+
+    assert response.content == b"complete"
+
+
 def test_multi():
     body = b"test 123"
 
