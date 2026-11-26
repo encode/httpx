@@ -243,10 +243,31 @@ def test_url_valid_port():
     assert url.port == 123
 
 
-def test_url_normalized_port():
+@pytest.mark.parametrize(
+    "url_str",
+    [
+        "https://example.com:443/",
+        "HTTPS://example.com:443/",
+        "http://example.com:80/",
+        "HTTP://example.com:80/",
+        "ws://example.com:80/",
+        "WS://example.com:80/",
+        "wss://example.com:443/",
+        "WSS://example.com:443/",
+        "ftp://example.com:21/",
+        "FTP://example.com:21/",
+    ],
+)
+def test_url_normalized_port(url_str):
     # If the port matches the scheme default it is normalized to None.
-    url = httpx.URL("https://example.com:443/")
+    url = httpx.URL(url_str)
     assert url.port is None
+
+
+def test_url_normalized_port_uppercase_scheme_equality():
+    assert httpx.URL("HTTP://example.com:80/") == httpx.URL("http://example.com/")
+    assert httpx.URL("HTTPS://example.com:443/") == httpx.URL("https://example.com/")
+    assert httpx.URL("HTTP://example.com:8080/").port == 8080
 
 
 def test_url_invalid_port():
