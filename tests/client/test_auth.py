@@ -598,6 +598,8 @@ async def test_digest_auth_resets_nonce_count_after_401() -> None:
     [
         'Digest realm="httpx@example.org", qop="auth"',  # missing fields
         'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
+        'Digest realm="httpx@example.org", nonce="123", bogus',
+        'Digest realm="httpx@example.org", nonce="123", algorithm=BOGUS',
     ],
 )
 @pytest.mark.anyio
@@ -618,6 +620,8 @@ async def test_async_digest_auth_raises_protocol_error_on_malformed_header(
     [
         'Digest realm="httpx@example.org", qop="auth"',  # missing fields
         'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
+        'Digest realm="httpx@example.org", nonce="123", bogus',
+        'Digest realm="httpx@example.org", nonce="123", algorithm=BOGUS',
     ],
 )
 def test_sync_digest_auth_raises_protocol_error_on_malformed_header(
