@@ -116,6 +116,7 @@ check_untyped_defs = true
 
 [tool.pytest.ini_options]
 addopts = "-rxXs"
+faulthandler_timeout = 60
 filterwarnings = [
   "error",
   # Until https://github.com/encode/httpcore/pull/1119 fixes https://github.com/encode/httpx/issues/3597.
