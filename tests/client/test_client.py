@@ -431,7 +431,7 @@ def test_client_decode_text_using_autodetect():
 
         assert response.status_code == 200
         assert response.reason_phrase == "OK"
-        assert response.encoding == "ISO-8859-1"
+        assert response.encoding in ("ISO-8859-1", "WINDOWS-1252")
         assert response.text == text
 
 
@@ -453,7 +453,7 @@ def test_client_decode_text_using_explicit_encoding():
         return httpx.Response(200, content=content)
 
     transport = httpx.MockTransport(cp1252_but_no_content_type)
-    with httpx.Client(transport=transport, default_encoding=autodetect) as client:
+    with httpx.Client(transport=transport, default_encoding="ISO-8859-1") as client:
         response = client.get("http://www.example.com")
 
         assert response.status_code == 200

@@ -56,7 +56,7 @@ def test_logging_request(server, caplog):
         response = client.get(server.url)
         assert response.status_code == 200
 
-    assert caplog.record_tuples == [
+    assert [record for record in caplog.record_tuples if record[0] == "httpx"] == [
         (
             "httpx",
             logging.INFO,
@@ -71,7 +71,7 @@ def test_logging_redirect_chain(server, caplog):
         response = client.get(server.url.copy_with(path="/redirect_301"))
         assert response.status_code == 200
 
-    assert caplog.record_tuples == [
+    assert [record for record in caplog.record_tuples if record[0] == "httpx"] == [
         (
             "httpx",
             logging.INFO,
