@@ -380,6 +380,19 @@ class Headers(typing.MutableMapping[str, str]):
 
 
 class Request:
+    """
+    An HTTP request.
+
+    Can be constructed explicitly for more control over exactly
+    what gets sent over the wire.
+
+    ```python
+    >>> request = httpx.Request("GET", "https://example.org")
+    ```
+
+    The keyword arguments mirror those of `Client.build_request()`.
+    """
+
     def __init__(
         self,
         method: str,
@@ -513,6 +526,19 @@ class Request:
 
 
 class Response:
+    """
+    An HTTP response.
+
+    Returned by `Client` / `AsyncClient` requests or constructed
+    directly in tests and custom transports.
+
+    ```python
+    >>> response = httpx.Response(200, json={"ok": True})
+    >>> response.status_code
+    200
+    ```
+    """
+
     def __init__(
         self,
         status_code: int,

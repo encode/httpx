@@ -1,3 +1,7 @@
+"""
+A next-generation HTTP client for Python.
+"""
+
 from .__version__ import __description__, __title__, __version__
 from ._api import *
 from ._auth import *
