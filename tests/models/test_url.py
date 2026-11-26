@@ -861,3 +861,118 @@ def test_ipv6_url_copy_with_host(url_str, new_host):
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]:1234"
     assert str(url) == "http://[::ffff:192.168.0.1]:1234"
+
+
+# Tests for the "netloc" keyword argument with bracketed IPv6 literals.
+
+
+def test_ipv6_url_netloc_roundtrip():
+    url = httpx.URL("http://[::ffff:192.168.0.1]:5678/")
+    assert url.netloc == b"[::ffff:192.168.0.1]:5678"
+
+    copy = httpx.URL(scheme="http", netloc=url.netloc, path="/")
+    assert str(copy) == "http://[::ffff:192.168.0.1]:5678/"
+    assert copy.host == "::ffff:192.168.0.1"
+    assert copy.port == 5678
+
+
+def test_ipv6_url_with_netloc_and_port():
+    url = httpx.URL(scheme="http", netloc=b"[::1]:8080", path="/")
+
+    assert str(url) == "http://[::1]:8080/"
+    assert url.netloc == b"[::1]:8080"
+    assert url.port == 8080
+
+
+def test_ipv6_url_with_netloc_without_port():
+    url = httpx.URL(scheme="http", netloc=b"[::ffff:192.168.0.1]")
+
+    assert str(url) == "http://[::ffff:192.168.0.1]"
+    assert url.host == "::ffff:192.168.0.1"
+    assert url.port is None
+
+
+def test_ipv6_url_with_netloc_default_port_dropped():
+    assert httpx.URL(scheme="http", netloc=b"[::1]:80") == httpx.URL("http://[::1]")
+    assert httpx.URL(scheme="https", netloc=b"[::1]:443") == httpx.URL("https://[::1]")
+
+
+def test_ipv6_url_with_netloc_empty_port():
+    # A trailing colon behaves the same as it does on the string path.
+    assert httpx.URL(scheme="http", netloc=b"[::1]:") == httpx.URL("http://[::1]")
+    assert httpx.URL(scheme="http", netloc=b"[::1]:", path="/").port is None
+
+
+def test_ipv6_url_copy_with_netloc():
+    url = httpx.URL("https://example.org/abc?q=1#frag")
+    copy = url.copy_with(netloc=b"[::1]:444")
+
+    assert str(copy) == "https://[::1]:444/abc?q=1#frag"
+
+
+def test_ipv6_host_and_netloc_agree():
+    from_host = httpx.URL(scheme="http", host="::ffff:192.168.0.1", port=8080, path="/")
+    from_netloc = httpx.URL(scheme="http", netloc=b"[::ffff:192.168.0.1]:8080", path="/")
+
+    assert from_host == from_netloc
+    assert str(from_host) == "http://[::ffff:192.168.0.1]:8080/"
+
+
+# Non-IPv6 netlocs: behaviour that must stay exactly as it is today.
+
+
+def test_url_with_netloc_and_port():
+    url = httpx.URL(scheme="https", netloc=b"example.net:444")
+
+    assert str(url) == "https://example.net:444"
+    assert url.port == 444
+
+
+def test_url_with_netloc_ipv4():
+    url = httpx.URL(scheme="http", netloc=b"127.0.0.1:8080")
+
+    assert str(url) == "http://127.0.0.1:8080"
+
+
+def test_url_with_empty_netloc():
+    assert httpx.URL(scheme="http", netloc=b"") == httpx.URL("http:")
+
+
+def test_url_with_invalid_netloc_port():
+    with pytest.raises(httpx.InvalidURL) as exc:
+        httpx.URL(scheme="http", netloc=b"example.net:notaport")
+
+    assert str(exc.value) == "Invalid port: 'notaport'"
+
+
+def test_url_with_netloc_percent_encoded_host():
+    # "user@example.net:80" is not userinfo: the netloc keyword is split on ":" only, so "@" stays in the
+    # host and gets percent-encoded; the default port is then dropped.
+    url = httpx.URL(scheme="http", netloc=b"user@example.net:80")
+
+    assert str(url) == "http://user%40example.net"
+    assert url.host == "user%40example.net"
+    assert url.port is None
+
+
+def test_url_with_netloc_userinfo_shaped_invalid_port():
+    # The first colon splits host="user" from port="password@example.net", which int() rejects.
+    with pytest.raises(httpx.InvalidURL) as exc:
+        httpx.URL(scheme="http", netloc=b"user:password@example.net")
+
+    assert str(exc.value) == "Invalid port: 'password@example.net'"
+
+
+def test_url_copy_with_netloc_preserves_userinfo_authority():
+    # Userinfo only ever comes from an existing authority; the netloc keyword replaces host[:port].
+    url = httpx.URL("https://tom:pass@example.org/")
+    copy = url.copy_with(netloc=b"example.net:444")
+
+    assert str(copy) == "https://tom:pass@example.net:444/"
+    assert copy.username == "tom"
+
+
+def test_url_with_malformed_netloc_rejected():
+    for netloc in (b"[::1", b"[::1]8080", b"[::1]x"):
+        with pytest.raises(httpx.InvalidURL):
+            httpx.URL(scheme="http", netloc=netloc)
