@@ -38,7 +38,7 @@ To include URL query parameters in the request, use the `params` keyword:
 >>> r = httpx.get('https://httpbin.org/get', params=params)
 ```
 
-To see how the values get encoding into the URL string, we can inspect the
+To see how the values get encoded into the URL string, we can inspect the
 resulting URL that was used to make the request:
 
 ```pycon
