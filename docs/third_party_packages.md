@@ -16,7 +16,7 @@ An elegant HTTP Cache implementation for HTTPX and HTTP Core.
 
 [GitHub](https://github.com/Colin-b/httpx_auth) - [Documentation](https://colin-b.github.io/httpx_auth/)
 
-Provides authentication classes to be used with HTTPX's [authentication parameter](advanced/authentication.md#customizing-authentication).
+Provides authentication classes to be used with HTTPX's [authentication parameter](advanced/authentication.md#custom-authentication-schemes).
 
 ### httpx-caching
 
