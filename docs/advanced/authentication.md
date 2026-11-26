@@ -40,6 +40,18 @@ HTTP digest authentication is a challenge-response authentication scheme. Unlike
 [<Response [401 UNAUTHORIZED]>]
 ```
 
+HTTPX also supports digest authentication using `auth-int` quality-of-protection, which provides message integrity protection. When `qop="auth-int"` is used, the authentication response includes a hash of the request body, protecting against tampering with the message content during transmission. This provides additional security over `qop="auth"` by ensuring that both the authentication credentials and the message body integrity are verified.
+
+```pycon
+>>> auth = httpx.DigestAuth(username="olivia", password="secret")
+>>> client = httpx.Client(auth=auth)
+>>> response = client.get("https://httpbin.org/digest-auth/auth-int/olivia/secret")
+>>> response
+<Response [200 OK]>
+>>> response.history
+[<Response [401 UNAUTHORIZED]>]
+```
+
 ## NetRC authentication
 
 HTTPX can be configured to use [a `.netrc` config file](https://everything.curl.dev/usingcurl/netrc) for authentication.
