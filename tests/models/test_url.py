@@ -278,6 +278,45 @@ def test_url_leading_dot_prefix_on_relative_url():
     assert url.path == "../abc"
 
 
+@pytest.mark.parametrize(
+    "given,expected",
+    [
+        # A trailing "." or ".." segment is replaced by a trailing "/",
+        # as specified by RFC 3986, section 5.2.4.
+        ("https://example.com/a/b/..", "https://example.com/a/"),
+        ("https://example.com/a/b/.", "https://example.com/a/b/"),
+        ("https://example.com/a/..", "https://example.com/"),
+        ("https://example.com/a/b/../..", "https://example.com/"),
+        ("https://example.com/a/b/c/./../../g", "https://example.com/a/g"),
+    ],
+)
+def test_url_normalized_path_trailing_dot_segments(given, expected):
+    url = httpx.URL(given)
+    assert str(url) == expected
+
+
+@pytest.mark.parametrize(
+    "given,expected",
+    [
+        # Percent-encoded dot segments are equivalent to "." and "..",
+        # as "%2E" percent-decodes to the unreserved character ".".
+        # See RFC 3986, sections 5.2.4 and 6.2.2.2.
+        ("https://example.com/a/%2e%2e/b", "https://example.com/b"),
+        ("https://example.com/a/%2E%2E/b", "https://example.com/b"),
+        ("https://example.com/a/%2E/b", "https://example.com/a/b"),
+        ("https://example.com/a/b/%2e./c", "https://example.com/a/c"),
+        ("https://example.com/a/b/.%2E/c", "https://example.com/a/c"),
+        ("https://example.com/a/b/%2e%2e", "https://example.com/a/"),
+        # Segments that merely contain "%2e" are not dot segments.
+        ("https://example.com/a/foo%2ebar/b", "https://example.com/a/foo%2ebar/b"),
+        ("https://example.com/a/.../b", "https://example.com/a/.../b"),
+    ],
+)
+def test_url_normalized_path_percent_encoded_dot_segments(given, expected):
+    url = httpx.URL(given)
+    assert str(url) == expected
+
+
 # Tests for query parameter percent encoding.
 #
 # Percent-encoding in `params={}` should match browser form behavior.
