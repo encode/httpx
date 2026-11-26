@@ -151,7 +151,7 @@ For maximum control on what gets sent over the wire, HTTPX supports building exp
 request = httpx.Request("GET", "https://example.com")
 ```
 
-To dispatch a `Request` instance across to the network, create a [`Client` instance](#client-instances) and use `.send()`:
+To dispatch a `Request` instance across to the network, create a [`Client`](../api.md#client) and use `.send()`:
 
 ```python
 with httpx.Client() as client:
@@ -159,7 +159,7 @@ with httpx.Client() as client:
     ...
 ```
 
-If you need to mix client-level and request-level options in a way that is not supported by the default [Merging of parameters](#merging-of-parameters), you can use `.build_request()` and then make arbitrary modifications to the `Request` instance. For example:
+If you need to mix client-level and request-level options in a way that is not supported by the default [Merging of configuration](#merging-of-configuration), you can use `.build_request()` and then make arbitrary modifications to the `Request` instance. For example:
 
 ```python
 headers = {"X-Api-Key": "...", "X-Client-ID": "ABC123"}
