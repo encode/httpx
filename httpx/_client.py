@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import datetime
+import email.utils
 import enum
 import logging
+import random
 import time
 import typing
 import warnings
 from contextlib import asynccontextmanager, contextmanager
 from types import TracebackType
+
+import anyio
 
 from .__version__ import __version__
 from ._auth import Auth, BasicAuth, FunctionAuth
@@ -19,6 +23,7 @@ from ._config import (
     Proxy,
     Timeout,
 )
+from ._content import ByteStream
 from ._decoders import SUPPORTED_DECODERS
 from ._exceptions import (
     InvalidURL,
@@ -120,6 +125,7 @@ USER_AGENT = f"python-httpx/{__version__}"
 ACCEPT_ENCODING = ", ".join(
     [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
 )
+DEFAULT_RETRY_METHODS = ("GET", "HEAD", "OPTIONS", "PUT", "DELETE")
 
 
 class ClientState(enum.Enum):
@@ -196,6 +202,10 @@ class BaseClient:
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        max_retries: int = 0,
+        retry_backoff_base: float = 0.5,
+        retry_after_max: float = 60.0,
+        retry_methods: typing.Collection[str] = DEFAULT_RETRY_METHODS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         trust_env: bool = True,
@@ -212,6 +222,16 @@ class BaseClient:
         self._timeout = Timeout(timeout)
         self.follow_redirects = follow_redirects
         self.max_redirects = max_redirects
+        if max_retries < 0:
+            raise ValueError("max_retries must be non-negative.")
+        if retry_backoff_base < 0:
+            raise ValueError("retry_backoff_base must be non-negative.")
+        if retry_after_max < 0:
+            raise ValueError("retry_after_max must be non-negative.")
+        self.max_retries = max_retries
+        self.retry_backoff_base = retry_backoff_base
+        self.retry_after_max = retry_after_max
+        self.retry_methods = frozenset(method.upper() for method in retry_methods)
         self._event_hooks = {
             "request": list(event_hooks.get("request", [])),
             "response": list(event_hooks.get("response", [])),
@@ -219,6 +239,42 @@ class BaseClient:
         self._trust_env = trust_env
         self._default_encoding = default_encoding
         self._state = ClientState.UNOPENED
+
+    def _should_retry(
+        self,
+        request: Request,
+        response: Response,
+        request_stream_replayable: bool,
+    ) -> bool:
+        return (
+            request.method.upper() in self.retry_methods
+            and request_stream_replayable
+            and (
+                response.status_code in (408, 429) or 500 <= response.status_code < 600
+            )
+        )
+
+    def _get_retry_delay(self, response: Response, retry_count: int) -> float:
+        retry_after = response.headers.get("Retry-After")
+        if retry_after is not None:
+            try:
+                delay = int(retry_after)
+                if delay >= 0:
+                    return min(float(delay), self.retry_after_max)
+            except ValueError:
+                try:
+                    retry_at = email.utils.parsedate_to_datetime(retry_after)
+                    if retry_at.tzinfo is None:
+                        retry_at = retry_at.replace(tzinfo=datetime.timezone.utc)
+                    delay_seconds: float = (
+                        retry_at - datetime.datetime.now(datetime.timezone.utc)
+                    ).total_seconds()
+                    return min(max(0.0, delay_seconds), self.retry_after_max)
+                except (TypeError, ValueError, OverflowError):
+                    pass
+
+        backoff = self.retry_backoff_base * (2**retry_count)
+        return random.uniform(0.0, backoff)
 
     @property
     def is_closed(self) -> bool:
@@ -625,6 +681,14 @@ class Client(BaseClient):
     * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
+    * **max_retries** - *(optional)* The maximum number of retries for 408, 429,
+    and 5xx responses. Defaults to `0`, which disables status-code retries.
+    * **retry_backoff_base** - *(optional)* The base delay, in seconds, for
+    exponential backoff with jitter. Defaults to `0.5`.
+    * **retry_after_max** - *(optional)* The maximum delay, in seconds, that a
+    `Retry-After` response header can impose. Defaults to `60.0`.
+    * **retry_methods** - *(optional)* The HTTP methods eligible for retries.
+    Defaults to `("GET", "HEAD", "OPTIONS", "PUT", "DELETE")`.
     * **base_url** - *(optional)* A URL to use as the base when building
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
@@ -654,6 +718,10 @@ class Client(BaseClient):
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        max_retries: int = 0,
+        retry_backoff_base: float = 0.5,
+        retry_after_max: float = 60.0,
+        retry_methods: typing.Collection[str] = DEFAULT_RETRY_METHODS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         transport: BaseTransport | None = None,
@@ -667,6 +735,10 @@ class Client(BaseClient):
             timeout=timeout,
             follow_redirects=follow_redirects,
             max_redirects=max_redirects,
+            max_retries=max_retries,
+            retry_backoff_base=retry_backoff_base,
+            retry_after_max=retry_after_max,
+            retry_methods=retry_methods,
             event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
@@ -973,15 +1045,42 @@ class Client(BaseClient):
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
-            for hook in self._event_hooks["request"]:
-                hook(request)
+            retry_count = 0
+            request_stream_replayable = isinstance(request.stream, ByteStream)
+            request_body_buffered = False
+            while True:
+                for hook in self._event_hooks["request"]:
+                    hook(request)
 
-            response = self._send_single_request(request)
+                if (
+                    not request_body_buffered
+                    and self.max_retries
+                    and request.method.upper() in self.retry_methods
+                    and request_stream_replayable
+                ):
+                    request.read()
+                    request_body_buffered = True
+
+                response = self._send_single_request(request)
+                try:
+                    for hook in self._event_hooks["response"]:
+                        hook(response)
+                    response.history = list(history)
+                except BaseException as exc:
+                    response.close()
+                    raise exc
+
+                if retry_count >= self.max_retries or not self._should_retry(
+                    request, response, request_stream_replayable
+                ):
+                    break
+
+                delay = self._get_retry_delay(response, retry_count)
+                response.close()
+                time.sleep(delay)
+                retry_count += 1
+
             try:
-                for hook in self._event_hooks["response"]:
-                    hook(response)
-                response.history = list(history)
-
                 if not response.has_redirect_location:
                     return response
 
@@ -1339,6 +1438,14 @@ class AsyncClient(BaseClient):
     * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
+    * **max_retries** - *(optional)* The maximum number of retries for 408, 429,
+    and 5xx responses. Defaults to `0`, which disables status-code retries.
+    * **retry_backoff_base** - *(optional)* The base delay, in seconds, for
+    exponential backoff with jitter. Defaults to `0.5`.
+    * **retry_after_max** - *(optional)* The maximum delay, in seconds, that a
+    `Retry-After` response header can impose. Defaults to `60.0`.
+    * **retry_methods** - *(optional)* The HTTP methods eligible for retries.
+    Defaults to `("GET", "HEAD", "OPTIONS", "PUT", "DELETE")`.
     * **base_url** - *(optional)* A URL to use as the base when building
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
@@ -1367,6 +1474,10 @@ class AsyncClient(BaseClient):
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        max_retries: int = 0,
+        retry_backoff_base: float = 0.5,
+        retry_after_max: float = 60.0,
+        retry_methods: typing.Collection[str] = DEFAULT_RETRY_METHODS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         transport: AsyncBaseTransport | None = None,
@@ -1381,6 +1492,10 @@ class AsyncClient(BaseClient):
             timeout=timeout,
             follow_redirects=follow_redirects,
             max_redirects=max_redirects,
+            max_retries=max_retries,
+            retry_backoff_base=retry_backoff_base,
+            retry_after_max=retry_after_max,
+            retry_methods=retry_methods,
             event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
@@ -1688,16 +1803,42 @@ class AsyncClient(BaseClient):
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
-            for hook in self._event_hooks["request"]:
-                await hook(request)
+            retry_count = 0
+            request_stream_replayable = isinstance(request.stream, ByteStream)
+            request_body_buffered = False
+            while True:
+                for hook in self._event_hooks["request"]:
+                    await hook(request)
 
-            response = await self._send_single_request(request)
+                if (
+                    not request_body_buffered
+                    and self.max_retries
+                    and request.method.upper() in self.retry_methods
+                    and request_stream_replayable
+                ):
+                    await request.aread()
+                    request_body_buffered = True
+
+                response = await self._send_single_request(request)
+                try:
+                    for hook in self._event_hooks["response"]:
+                        await hook(response)
+                    response.history = list(history)
+                except BaseException as exc:
+                    await response.aclose()
+                    raise exc
+
+                if retry_count >= self.max_retries or not self._should_retry(
+                    request, response, request_stream_replayable
+                ):
+                    break
+
+                delay = self._get_retry_delay(response, retry_count)
+                await response.aclose()
+                await anyio.sleep(delay)
+                retry_count += 1
+
             try:
-                for hook in self._event_hooks["response"]:
-                    await hook(response)
-
-                response.history = list(history)
-
                 if not response.has_redirect_location:
                     return response
 
