@@ -41,6 +41,30 @@ def test_multipart(value, output):
     )
 
 
+@pytest.mark.parametrize("files", ({}, []))
+def test_multipart_without_files(files):
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+
+    data = {"text": "abc"}
+    response = client.post("http://127.0.0.1:8000/", data=data, files=files)
+    boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
+    boundary_bytes = boundary.encode("ascii")
+
+    assert response.status_code == 200
+    assert response.request.headers["Content-Type"].startswith(
+        "multipart/form-data; boundary="
+    )
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="text"\r\n',
+            b"\r\n",
+            b"abc\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
+
+
 @pytest.mark.parametrize(
     "header",
     [
