@@ -2,14 +2,10 @@ from __future__ import annotations
 
 import inspect
 import warnings
+from collections.abc import AsyncIterable, AsyncIterator, Iterable, Iterator, Mapping
 from json import dumps as json_dumps
 from typing import (
     Any,
-    AsyncIterable,
-    AsyncIterator,
-    Iterable,
-    Iterator,
-    Mapping,
 )
 from urllib.parse import urlencode
 
@@ -60,8 +56,7 @@ class IteratorByteStream(SyncByteStream):
                 chunk = self._stream.read(self.CHUNK_SIZE)
         else:
             # Otherwise iterate.
-            for part in self._stream:
-                yield part
+            yield from self._stream
 
 
 class AsyncIteratorByteStream(AsyncByteStream):
