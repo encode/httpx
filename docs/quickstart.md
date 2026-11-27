@@ -448,6 +448,10 @@ The `history` property of the response can be used to inspect any followed redir
 It contains a list of any redirect responses that were followed, in the order
 in which they were made.
 
+When following a redirect to a different origin (scheme, host, or port), HTTPX
+automatically strips the `Authorization` header to avoid leaking credentials,
+except for direct HTTP to HTTPS redirects to the same host and default port.
+
 ## Timeouts
 
 HTTPX defaults to including reasonable timeouts for all network operations,
