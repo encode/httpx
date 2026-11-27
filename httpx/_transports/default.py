@@ -118,6 +118,15 @@ def map_httpcore_exceptions() -> typing.Iterator[None]:
         raise mapped_exc(message) from exc
 
 
+def create_proxy(proxy: ProxyTypes | None, ssl_context: ssl.SSLContext) -> Proxy | None:
+    if isinstance(proxy, (str, URL)):
+        proxy_url = proxy if isinstance(proxy, URL) else URL(proxy)
+        if proxy_url.scheme == "https":
+            return Proxy(url=proxy_url, ssl_context=ssl_context)
+        return Proxy(url=proxy_url)
+    return proxy
+
+
 class ResponseStream(SyncByteStream):
     def __init__(self, httpcore_stream: typing.Iterable[bytes]) -> None:
         self._httpcore_stream = httpcore_stream
@@ -149,8 +158,8 @@ class HTTPTransport(BaseTransport):
     ) -> None:
         import httpcore
 
-        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
+        proxy = create_proxy(proxy, ssl_context)
 
         if proxy is None:
             self._pool = httpcore.ConnectionPool(
@@ -293,8 +302,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
     ) -> None:
         import httpcore
 
-        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
+        proxy = create_proxy(proxy, ssl_context)
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(
