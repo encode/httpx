@@ -516,3 +516,28 @@ def test_allow_nan_false():
         ValueError, match="Out of range float values are not JSON compliant"
     ):
         httpx.Response(200, json=data_with_inf)
+
+
+@pytest.mark.anyio
+async def test_iterator_content_splits_large_chunks():
+    # Generator yielding a single large chunk (100 KB)
+    large_chunk = b"a" * 102_400  # 100 KB
+
+    def gen() -> typing.Iterator[bytes]:
+        yield large_chunk
+
+    # Pass generator to Request (internally uses IteratorByteStream)
+    request = httpx.Request(method, url, content=gen())
+
+    # Cast to Iterable[bytes] to make mypy happy
+    sync_stream: typing.Iterable[bytes] = request.stream  # type: ignore
+
+    # Collect chunks
+    chunks = list(sync_stream)
+
+    # Each chunk must be <= 64 KB
+    for chunk in chunks:
+        assert len(chunk) <= 64 * 1024
+
+    # Total content matches original
+    assert b"".join(chunks) == large_chunk
