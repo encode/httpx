@@ -120,7 +120,7 @@ class BrotliDecoder(ContentDecoder):
             raise ImportError(
                 "Using 'BrotliDecoder', but neither of the 'brotlicffi' or 'brotli' "
                 "packages have been installed. "
-                "Make sure to install httpx using `pip install httpx[brotli]`."
+                "Make sure to install httpx using `pip install 'httpx[brotli]'`."
             ) from None
 
         self.decompressor = brotli.Decompressor()
@@ -163,7 +163,7 @@ class ZStandardDecoder(ContentDecoder):
     Handle 'zstd' RFC 8878 decoding.
 
     Requires `pip install zstandard`.
-    Can be installed as a dependency of httpx using `pip install httpx[zstd]`.
+    Can be installed as a dependency of httpx using `pip install 'httpx[zstd]'`.
     """
 
     # inspired by the ZstdDecoder implementation in urllib3
@@ -171,7 +171,7 @@ class ZStandardDecoder(ContentDecoder):
         if zstandard is None:  # pragma: no cover
             raise ImportError(
                 "Using 'ZStandardDecoder', ..."
-                "Make sure to install httpx using `pip install httpx[zstd]`."
+                "Make sure to install httpx using `pip install 'httpx[zstd]'`."
             ) from None
 
         self.decompressor = zstandard.ZstdDecompressor().decompressobj()
