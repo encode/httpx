@@ -286,7 +286,7 @@ class Headers(typing.MutableMapping[str, str]):
         Return a single header value.
 
         If there are multiple headers with the same key, then we concatenate
-        them with commas. See: https://tools.ietf.org/html/rfc7230#section-3.2.2
+        them with commas. See: https://tools.ietf.org/html/rfc9110#section-5.3
         """
         normalized_key = key.lower().encode(self.encoding)
 

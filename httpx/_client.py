@@ -498,7 +498,7 @@ class BaseClient:
         """
         method = request.method
 
-        # https://tools.ietf.org/html/rfc7231#section-6.4.4
+        # https://tools.ietf.org/html/rfc9110#section-15.4.4
         if response.status_code == codes.SEE_OTHER and method != "HEAD":
             method = "GET"
 
@@ -532,12 +532,12 @@ class BaseClient:
         if url.scheme and not url.host:
             url = url.copy_with(host=request.url.host)
 
-        # Facilitate relative 'Location' headers, as allowed by RFC 7231.
+        # Facilitate relative 'Location' headers, as allowed by RFC 9110.
         # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
         if url.is_relative_url:
             url = request.url.join(url)
 
-        # Attach previous fragment if needed (RFC 7231 7.1.2)
+        # Attach previous fragment if needed (RFC 9110 10.2.2)
         if request.url.fragment and not url.fragment:
             url = url.copy_with(fragment=request.url.fragment)
 
