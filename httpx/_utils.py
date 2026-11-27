@@ -4,12 +4,21 @@ import ipaddress
 import os
 import re
 import typing
+from datetime import timedelta
 from urllib.request import getproxies
 
 from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._urls import URL
+
+
+def opt_timedelta_to_seconds(
+    value: typing.Union[float, timedelta, None],
+) -> float | None:
+    if isinstance(value, timedelta):
+        return value.total_seconds()
+    return value
 
 
 def primitive_value_to_str(value: PrimitiveData) -> str:
