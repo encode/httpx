@@ -217,3 +217,27 @@ def test_parse_header_links(value, expected):
 def test_parse_header_links_no_link():
     all_links = httpx.Response(200).links
     assert all_links == {}
+
+
+def test_header_encoding_error_mentions_header_name():
+    with pytest.raises(UnicodeEncodeError, match="Header 'auth' value"):
+        httpx.Headers({"auth": "안녕하세요"})
+
+
+def test_header_key_encoding_error_mentions_header_name():
+    with pytest.raises(UnicodeEncodeError, match="Header name '헤더'"):
+        httpx.Headers({"헤더": "value"})
+
+
+def test_header_encoding_error_without_header_name():
+    from httpx._models import _normalize_header_value
+
+    with pytest.raises(UnicodeEncodeError, match="Header value contains non-ASCII"):
+        _normalize_header_value("안녕")
+
+
+def test_header_key_encoding_error_without_header_name():
+    from httpx._models import _normalize_header_key
+
+    with pytest.raises(UnicodeEncodeError, match="Header name contains non-ASCII"):
+        _normalize_header_key("헤더")
