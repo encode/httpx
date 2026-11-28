@@ -197,6 +197,65 @@ def test_response_fallback_to_utf8_encoding():
     assert response.encoding == "utf-8"
 
 
+def autodetect_utf8(content: bytes) -> str:
+    return "utf-8"
+
+
+def test_response_fallback_to_utf8_encoding_with_autodetect():
+    """
+    Fallback to utf-8 if we get an invalid charset in the Content-Type header
+    and autodetection is impossible because the content has not been read yet.
+    """
+    headers = {"Content-Type": "text-plain; charset=invalid-codec-name"}
+    content = "おはようございます。".encode("utf-8")
+
+    response = httpx.Response(
+        200,
+        headers=headers,
+        stream=httpx.ByteStream(content),
+        default_encoding=autodetect_utf8,
+    )
+
+    assert response.encoding == "utf-8"
+
+    response.read()
+    assert response.text == "おはようございます。"
+
+
+def test_response_autodetect_encoding_with_content():
+    """
+    Use the charset autodetection callable once the content is available.
+    """
+    headers = {"Content-Type": "text-plain; charset=invalid-codec-name"}
+
+    response = httpx.Response(
+        200,
+        headers=headers,
+        content=b"Hello, world!",
+        default_encoding=autodetect_utf8,
+    )
+
+    assert response.encoding == "utf-8"
+    assert response.text == "Hello, world!"
+
+
+def test_response_iter_text_with_autodetect_and_unread_content():
+    """
+    Decoding a streamed response must not hand an unusable charset to the
+    text decoder when `default_encoding` is a callable.
+    """
+    headers = {"Content-Type": "text-plain; charset=invalid-codec-name"}
+
+    response = httpx.Response(
+        200,
+        headers=headers,
+        stream=httpx.ByteStream(b"Hello, world!"),
+        default_encoding=autodetect_utf8,
+    )
+
+    assert "".join(response.iter_text()) == "Hello, world!"
+
+
 def test_response_no_charset_with_ascii_content():
     """
     A response with ascii encoded content should decode correctly,
