@@ -668,6 +668,11 @@ class Response:
                     encoding = self.default_encoding
                 elif hasattr(self, "_content"):
                     encoding = self.default_encoding(self._content)
+                else:
+                    # The callable `default_encoding` requires the response
+                    # content, which has not been read yet. Fall back to utf-8
+                    # rather than passing an unusable charset through.
+                    encoding = None
             self._encoding = encoding or "utf-8"
         return self._encoding
 
